@@ -1,0 +1,17 @@
+{
+  "name": "sns-agent-system",
+  "version": "1.0.0",
+  "description": "AI Agent 협업 시스템 - 동문 SNS 개발",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

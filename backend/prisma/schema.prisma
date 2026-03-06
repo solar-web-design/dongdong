@@ -1,0 +1,374 @@
+// 대학 동문 SNS 플랫폼 - Prisma Schema
+// Phase 1~5 전체 설계
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================== 회원 =====================
+
+enum Role {
+  PRESIDENT       // 회장
+  VICE_PRESIDENT  // 부회장
+  TREASURER       // 총무
+  MEMBER          // 일반회원
+}
+
+enum MemberStatus {
+  PENDING   // 가입 승인 대기
+  ACTIVE    // 활성
+  SUSPENDED // 정지
+  WITHDRAWN // 탈퇴
+}
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  password      String?      // OAuth 전용 시 null
+  name          String
+  phone         String?
+  profileImage  String?
+  role          Role         @default(MEMBER)
+  status        MemberStatus @default(PENDING)
+
+  // 동문 정보
+  university    String       // 대학명
+  department    String?      // 학과
+  admissionYear Int?         // 입학년도
+  graduationYear Int?        // 졸업년도
+  studentId     String?      // 학번
+
+  // LinkedIn 스타일 프로필
+  bio           String?      // 자기소개
+  company       String?      // 현재 직장
+  position      String?      // 직위
+  location      String?      // 거주지
+  website       String?
+
+  // OAuth
+  kakaoId       String?      @unique
+  googleId      String?      @unique
+
+  // 토큰
+  refreshToken  String?
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  posts              Post[]
+  comments           Comment[]
+  sentMessages       DirectMessage[]  @relation("SentMessages")
+  receivedMessages   DirectMessage[]  @relation("ReceivedMessages")
+  chatRoomMembers    ChatRoomMember[]
+  meetingMembers     MeetingMember[]
+  feePayments        FeePayment[]
+  notifications      Notification[]
+  approvedBy         User?            @relation("ApprovedByUser", fields: [approvedById], references: [id])
+  approvedById       String?
+  approvedUsers      User[]           @relation("ApprovedByUser")
+  announcements      Announcement[]
+
+  @@map("users")
+}
+
+// ===================== 게시판 =====================
+
+enum PostCategory {
+  FREE        // 자유게시판
+  NEWS        // 소식
+  JOB         // 취업/채용
+  MARKETPLACE // 장터
+}
+
+model Post {
+  id        String       @id @default(uuid())
+  title     String
+  content   String
+  category  PostCategory @default(FREE)
+  images    String[]     // 이미지 URL 배열
+  viewCount Int          @default(0)
+  likeCount Int          @default(0)
+  isPinned  Boolean      @default(false)
+
+  author    User         @relation(fields: [authorId], references: [id])
+  authorId  String
+
+  comments  Comment[]
+  likes     PostLike[]
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([authorId])
+  @@index([category])
+  @@index([createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+
+  // 대댓글
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId  String?
+  replies   Comment[] @relation("CommentReplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@map("comments")
+}
+
+model PostLike {
+  id     String @id @default(uuid())
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+  userId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@map("post_likes")
+}
+
+// ===================== 공지사항 =====================
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  isPinned  Boolean  @default(true)
+
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+  @@map("announcements")
+}
+
+// ===================== 모임 관리 =====================
+
+enum MeetingStatus {
+  UPCOMING   // 예정
+  ONGOING    // 진행중
+  COMPLETED  // 완료
+  CANCELLED  // 취소
+}
+
+model Meeting {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  location    String?
+  date        DateTime
+  maxMembers  Int?
+  status      MeetingStatus @default(UPCOMING)
+  fee         Int           @default(0) // 참가비
+
+  members     MeetingMember[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([date])
+  @@map("meetings")
+}
+
+enum RSVPStatus {
+  ATTENDING     // 참석
+  NOT_ATTENDING // 불참
+  MAYBE         // 미정
+}
+
+model MeetingMember {
+  id        String     @id @default(uuid())
+  meeting   Meeting    @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId String
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String
+  rsvp      RSVPStatus @default(MAYBE)
+
+  createdAt DateTime   @default(now())
+
+  @@unique([meetingId, userId])
+  @@map("meeting_members")
+}
+
+// ===================== 실시간 채팅 =====================
+
+enum ChatRoomType {
+  GROUP  // 그룹 채팅
+  DM     // 1:1 DM
+}
+
+model ChatRoom {
+  id        String         @id @default(uuid())
+  name      String?        // 그룹 채팅방 이름
+  type      ChatRoomType   @default(GROUP)
+
+  members   ChatRoomMember[]
+  messages  ChatMessage[]
+
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("chat_rooms")
+}
+
+model ChatRoomMember {
+  id         String   @id @default(uuid())
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  chatRoomId String
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  joinedAt   DateTime @default(now())
+  lastReadAt DateTime @default(now())
+
+  @@unique([chatRoomId, userId])
+  @@map("chat_room_members")
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  content    String
+  images     String[] // 이미지 첨부
+
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  chatRoomId String
+  senderId   String   // User ID
+
+  createdAt  DateTime @default(now())
+
+  @@index([chatRoomId, createdAt])
+  @@map("chat_messages")
+}
+
+// ===================== DM =====================
+
+model DirectMessage {
+  id         String   @id @default(uuid())
+  content    String
+  isRead     Boolean  @default(false)
+
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  senderId   String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiverId String
+
+  createdAt  DateTime @default(now())
+
+  @@index([senderId, receiverId])
+  @@index([createdAt(sort: Desc)])
+  @@map("direct_messages")
+}
+
+// ===================== 회비/회계 =====================
+
+enum FeeType {
+  MONTHLY    // 월회비
+  ANNUAL     // 연회비
+  SPECIAL    // 특별회비
+  MEETING    // 모임비
+}
+
+enum PaymentStatus {
+  PENDING    // 미납
+  PAID       // 납부
+  OVERDUE    // 연체
+  EXEMPT     // 면제
+}
+
+model FeeSchedule {
+  id          String   @id @default(uuid())
+  type        FeeType
+  amount      Int
+  dueDate     DateTime
+  description String?
+
+  payments    FeePayment[]
+
+  createdAt   DateTime @default(now())
+
+  @@map("fee_schedules")
+}
+
+model FeePayment {
+  id            String        @id @default(uuid())
+  amount        Int
+  status        PaymentStatus @default(PENDING)
+  paidAt        DateTime?
+  receiptImage  String?       // 입금 증빙
+
+  schedule      FeeSchedule   @relation(fields: [scheduleId], references: [id])
+  scheduleId    String
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([scheduleId, userId])
+  @@map("fee_payments")
+}
+
+model AccountBook {
+  id          String   @id @default(uuid())
+  type        String   // INCOME | EXPENSE
+  amount      Int
+  description String
+  date        DateTime
+  category    String?  // 수입/지출 카테고리
+  receiptUrl  String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@map("account_books")
+}
+
+// ===================== 알림 =====================
+
+enum NotificationType {
+  APPROVAL       // 가입 승인
+  POST           // 새 게시글
+  COMMENT        // 댓글
+  MEETING        // 모임
+  FEE            // 회비
+  ANNOUNCEMENT   // 공지사항
+  CHAT           // 채팅
+  DM             // DM
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  link      String?          // 클릭 시 이동할 경로
+
+  user      User             @relation(fields: [userId], references: [id])
+  userId    String
+
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}

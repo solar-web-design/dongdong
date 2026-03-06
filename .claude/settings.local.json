@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm:*)",
+      "Bash(printf 0\\\\n:*)",
+      "Bash(npx next:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx prisma:*)",
+      "Bash(mkdir:*)",
+      "Bash(docker:*)",
+      "Bash(powershell.exe -Command \"wsl --update\")",
+      "Bash(docker-compose --version)",
+      "Bash(git --version)",
+      "Bash(psql --version)",
+      "Bash(redis-cli --version)"
+    ]
+  }
+}
