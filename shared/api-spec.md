@@ -10,7 +10,7 @@
 
 ### POST /auth/register - 회원가입 신청
 ```
-Body: { email, password, name, phone?, university, department?, admissionYear?, graduationYear?, studentId? }
+Body: { email, password, name, phone?, university, department?, admissionYear?, graduationYear?, studentId?, bio?, company?, position?, location? }
 Response 201: { id, email, name, status: "PENDING" }
 ```
 

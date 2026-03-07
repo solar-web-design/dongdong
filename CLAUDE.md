@@ -28,12 +28,45 @@ dongdong/
 - screens.md    → 화면 설계 (planner 작성, frontend 참조)
 - .env.example  → 환경변수 목록 (devops 작성)
 
-## 개발 순서
-Phase 1: planner → backend + frontend (병렬) → security → qa → devops
-Phase 2: 모임관리, 공지
-Phase 3: 실시간 채팅, DM
-Phase 4: 회비/회계
-Phase 5: 부가기능
+## 개발 순서 및 진행 상태
+
+### Phase 1: 인증 / 게시판 / 회원관리 ✅ 완료
+- [x] 회원가입 (이메일 + 소셜 로그인) + 비밀번호 유효성 검사
+- [x] 로그인 / 로그아웃 / 토큰 갱신
+- [x] 게시판 CRUD (작성/수정/삭제/검색/카테고리)
+- [x] 댓글 / 대댓글
+- [x] 좋아요 토글
+- [x] 게시글 고정 (관리자)
+- [x] 가입 승인/거절 관리 (회장)
+- [x] 회원 프로필 조회/수정
+- [x] 회원 역할 변경 / 강제탈퇴
+- [x] CORS 다중 origin 지원
+
+### Phase 2: 모임관리, 공지 ✅ 완료
+- [x] 모임 CRUD + RSVP (백엔드)
+- [x] 공지사항 CRUD (백엔드)
+- [x] 모임 목록 페이지네이션 수정 (page, totalPages 반환)
+- [x] 프론트엔드 연동 검증 완료
+
+### Phase 3: 실시간 채팅, DM ✅ 완료
+- [x] 그룹 채팅 (Socket.io 게이트웨이)
+- [x] DM (백엔드)
+- [x] 채팅 메시지에 sender 정보 포함 (REST + Socket)
+- [x] DM 메시지에 sender 정보 포함
+- [x] 프론트엔드 실시간 연동 검증 완료
+
+### Phase 4: 회비/회계 ✅ 완료
+- [x] 회비 일정/납부 관리 (백엔드)
+- [x] 회계 장부 (백엔드)
+- [x] 납부하기 버튼 기능 연결
+- [x] 프론트엔드 연동 검증 완료
+
+### Phase 5: 부가기능 ⏳ 일부 남음
+- [x] 알림 (백엔드)
+- [x] 이미지 업로드 서비스 (ConfigService 기반 URL 생성)
+- [ ] 보안 점검 (security agent)
+- [ ] QA 테스트 (qa agent)
+- [ ] DevOps 배포 설정 (devops agent)
 
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인

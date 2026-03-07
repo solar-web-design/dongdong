@@ -79,6 +79,7 @@ export class ChatService {
       },
       take: limit + 1,
       orderBy: { createdAt: 'desc' },
+      include: { sender: { select: { id: true, name: true, profileImage: true } } },
     });
 
     const hasMore = messages.length > limit;
@@ -100,6 +101,7 @@ export class ChatService {
 
     const message = await this.prisma.chatMessage.create({
       data: { chatRoomId: roomId, senderId, content, images: images || [] },
+      include: { sender: { select: { id: true, name: true, profileImage: true } } },
     });
 
     await this.prisma.chatRoom.update({

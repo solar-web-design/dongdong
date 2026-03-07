@@ -68,7 +68,7 @@ export default function MeetingsPage() {
                 )}
                 <div className="flex items-center gap-2">
                   <Users size={14} />
-                  {meeting.members?.filter((m) => m.rsvp === 'ATTENDING').length || 0}
+                  {meeting.memberCount || 0}
                   {meeting.maxMembers && `/${meeting.maxMembers}`}명
                 </div>
                 {meeting.fee > 0 && (

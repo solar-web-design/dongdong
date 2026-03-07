@@ -40,6 +40,8 @@ export class MeetingsService {
         _count: undefined,
       })),
       total,
+      page,
+      totalPages: Math.ceil(total / limit),
     };
   }
 

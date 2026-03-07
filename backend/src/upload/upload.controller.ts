@@ -5,13 +5,13 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UploadService } from './upload.service';
 
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -19,6 +19,8 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 @Controller('upload')
 @UseGuards(JwtAuthGuard)
 export class UploadController {
+  constructor(private readonly uploadService: UploadService) {}
+
   @Post('image')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -40,11 +42,10 @@ export class UploadController {
       },
     }),
   )
-  uploadImage(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('파일이 필요합니다');
     }
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    return { url: `${baseUrl}/uploads/${file.filename}` };
+    return this.uploadService.uploadImage(file);
   }
 }

@@ -79,6 +79,7 @@ export class DmService {
       },
       take: limit + 1,
       orderBy: { createdAt: 'desc' },
+      include: { sender: { select: { id: true, name: true, profileImage: true } } },
     });
 
     const hasMore = messages.length > limit;

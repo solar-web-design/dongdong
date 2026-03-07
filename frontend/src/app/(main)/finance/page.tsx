@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Clock, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
@@ -12,8 +12,27 @@ import type { FeeSchedule, FeePayment, AccountBook } from '@/types';
 
 export default function FinancePage() {
   const [tab, setTab] = useState<'payments' | 'books'>('payments');
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const { user } = useAuthStore();
   const isTreasurer = user?.role === 'TREASURER' || user?.role === 'PRESIDENT';
+  const queryClient = useQueryClient();
+
+  const paymentMutation = useMutation({
+    mutationFn: ({ scheduleId, amount }: { scheduleId: string; amount: number }) =>
+      api(`/fees/payments/${scheduleId}`, {
+        method: 'POST',
+        body: JSON.stringify({ amount }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feeSchedules'] });
+      setFeedback({ type: 'success', message: '납부가 완료되었습니다.' });
+      setTimeout(() => setFeedback(null), 3000);
+    },
+    onError: (error: Error) => {
+      setFeedback({ type: 'error', message: error.message || '납부 처리 중 오류가 발생했습니다.' });
+      setTimeout(() => setFeedback(null), 3000);
+    },
+  });
 
   const { data: schedules, isLoading: loadingFees } = useQuery({
     queryKey: ['feeSchedules'],
@@ -39,6 +58,21 @@ export default function FinancePage() {
         <div className="card p-4 mb-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">총 잔액</div>
           <div className="text-2xl font-bold">{formatCurrency(books.summary.balance)}</div>
+        </div>
+      )}
+
+      {/* Feedback */}
+      {feedback && (
+        <div
+          className={cn(
+            'p-3 rounded-lg mb-4 text-sm flex items-center gap-2',
+            feedback.type === 'success'
+              ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          )}
+        >
+          {feedback.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
+          {feedback.message}
         </div>
       )}
 
@@ -93,7 +127,18 @@ export default function FinancePage() {
                   </div>
                   <p className="text-xs text-gray-400 dark:text-gray-500">마감일: {formatDate(schedule.dueDate)}</p>
                   {!isPaid && (
-                    <button className="btn-primary w-full mt-3 text-sm !py-2">납부하기</button>
+                    <button
+                      className="btn-primary w-full mt-3 text-sm !py-2"
+                      disabled={paymentMutation.isPending}
+                      onClick={() =>
+                        paymentMutation.mutate({
+                          scheduleId: schedule.id,
+                          amount: schedule.amount,
+                        })
+                      }
+                    >
+                      {paymentMutation.isPending ? '처리 중...' : '납부하기'}
+                    </button>
                   )}
                 </div>
               );
