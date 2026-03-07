@@ -69,6 +69,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() roomId: string,
   ) {
+    if (!roomId || typeof roomId !== 'string') return;
     client.join(roomId);
   }
 
@@ -77,6 +78,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() roomId: string,
   ) {
+    if (!roomId || typeof roomId !== 'string') return;
     client.leave(roomId);
   }
 
@@ -87,6 +89,26 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const userId = client.data.userId;
     if (!userId) return;
+
+    // Validate input: roomId and content must be non-empty strings within length limits
+    if (
+      !data?.roomId ||
+      typeof data.roomId !== 'string' ||
+      !data?.content ||
+      typeof data.content !== 'string' ||
+      data.content.length > 5000
+    ) {
+      client.emit('error', { message: '잘못된 메시지 형식입니다' });
+      return;
+    }
+
+    // Validate images array if provided
+    if (data.images !== undefined) {
+      if (!Array.isArray(data.images) || data.images.length > 10 || data.images.some(img => typeof img !== 'string')) {
+        client.emit('error', { message: '잘못된 이미지 형식입니다' });
+        return;
+      }
+    }
 
     const message = await this.chatService.sendMessage(
       data.roomId,
@@ -104,7 +126,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { roomId: string },
   ) {
     const userId = client.data.userId;
-    if (!userId) return;
+    if (!userId || !data?.roomId || typeof data.roomId !== 'string') return;
     client.to(data.roomId).emit('typing', { roomId: data.roomId, userId });
   }
 
@@ -114,7 +136,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { roomId: string },
   ) {
     const userId = client.data.userId;
-    if (!userId) return;
+    if (!userId || !data?.roomId || typeof data.roomId !== 'string') return;
     await this.chatService.markAsRead(data.roomId, userId);
   }
 }

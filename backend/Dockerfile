@@ -1,24 +1,23 @@
-# ---- Build Stage ----
-FROM node:20-alpine AS builder
-
+# Stage 1: Install dependencies
+FROM node:20-alpine AS deps
 WORKDIR /app
-
 COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY prisma ./prisma
-RUN npx prisma generate
-
-COPY . .
-RUN npm run build
-
-# ---- Production Stage ----
-FROM node:20-alpine AS production
-
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001
-
+# Stage 2: Build
+FROM node:20-alpine AS builder
 WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npx prisma generate && npm run build
+
+# Stage 3: Production
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nestjs && \
+    adduser --system --uid 1001 nestjs
 
 COPY --from=builder /app/package.json /app/package-lock.json ./
 RUN npm ci --omit=dev
@@ -29,6 +28,6 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 USER nestjs
 
-EXPOSE 3000
+EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

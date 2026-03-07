@@ -44,6 +44,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Throttle({ short: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async refresh(@Req() req: express.Request, @Res({ passthrough: true }) res: express.Response) {
     const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
@@ -57,6 +58,7 @@ export class AuthController {
   }
 
   @Post('oauth/kakao')
+  @Throttle({ short: { limit: 5, ttl: 900000 } })
   @HttpCode(HttpStatus.OK)
   async oauthKakao(@Body('code') code: string, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.authService.oauthKakao(code);
@@ -66,6 +68,7 @@ export class AuthController {
   }
 
   @Post('oauth/google')
+  @Throttle({ short: { limit: 5, ttl: 900000 } })
   @HttpCode(HttpStatus.OK)
   async oauthGoogle(@Body('code') code: string, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.authService.oauthGoogle(code);

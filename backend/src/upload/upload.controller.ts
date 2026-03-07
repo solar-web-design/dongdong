@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UploadService } from './upload.service';
 
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 @Controller('upload')
@@ -35,7 +36,11 @@ export class UploadController {
       fileFilter: (_req, file, cb) => {
         const ext = extname(file.originalname).toLowerCase();
         if (!ALLOWED_EXTENSIONS.includes(ext)) {
-          cb(new BadRequestException('허용되지 않는 파일 형식입니다'), false);
+          cb(new BadRequestException('허용되지 않는 파일 확장자입니다'), false);
+          return;
+        }
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          cb(new BadRequestException('허용되지 않는 MIME 타입입니다'), false);
           return;
         }
         cb(null, true);
