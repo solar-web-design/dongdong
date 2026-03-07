@@ -61,12 +61,12 @@ dongdong/
 - [x] 납부하기 버튼 기능 연결
 - [x] 프론트엔드 연동 검증 완료
 
-### Phase 5: 부가기능 ⏳ 일부 남음
+### Phase 5: 부가기능 ✅ 완료
 - [x] 알림 (백엔드)
 - [x] 이미지 업로드 서비스 (ConfigService 기반 URL 생성)
-- [ ] 보안 점검 (security agent)
-- [ ] QA 테스트 (qa agent)
-- [ ] DevOps 배포 설정 (devops agent)
+- [x] 보안 점검 (Rate limiting, DTO MaxLength, MIME 검증, WebSocket 입력 검증)
+- [x] QA 테스트 (Backend 170개 + Frontend 123개 = 293개 전체 통과)
+- [x] DevOps 배포 설정 (Dockerfile, docker-compose, nginx 리버스 프록시)
 
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인
