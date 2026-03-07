@@ -60,7 +60,7 @@ export class ReportsService {
           select: { id: true, name: true, profileImage: true },
         });
 
-        let target = null;
+        let target: Record<string, unknown> | null = null;
         if (report.postId) {
           target = await this.prisma.post.findUnique({
             where: { id: report.postId },

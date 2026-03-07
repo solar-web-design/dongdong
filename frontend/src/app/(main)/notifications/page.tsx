@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Bell } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -20,13 +20,23 @@ export default function NotificationsPage() {
 
   const readAllMutation = useMutation({
     mutationFn: () => api('/notifications/read-all', { method: 'PATCH' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notifications'] }); queryClient.invalidateQueries({ queryKey: ['notifications-count'] }); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api(`/notifications/${id}`, { method: 'DELETE' }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notifications'] }); queryClient.invalidateQueries({ queryKey: ['notifications-count'] }); },
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: () => api('/notifications', { method: 'DELETE' }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notifications'] }); queryClient.invalidateQueries({ queryKey: ['notifications-count'] }); },
   });
 
   const handleClick = async (notification: Notification) => {
     if (!notification.isRead) {
       await api(`/notifications/${notification.id}/read`, { method: 'PATCH' });
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] }); queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
     }
     if (notification.link) router.push(notification.link);
   };
@@ -35,14 +45,24 @@ export default function NotificationsPage() {
     <div className="px-4 py-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">알림</h1>
-        {data?.unreadCount ? (
-          <button
-            onClick={() => readAllMutation.mutate()}
-            className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-          >
-            전체 읽음
-          </button>
-        ) : null}
+        <div className="flex gap-3">
+          {data?.unreadCount ? (
+            <button
+              onClick={() => readAllMutation.mutate()}
+              className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            >
+              전체 읽음
+            </button>
+          ) : null}
+          {data?.data.length ? (
+            <button
+              onClick={() => { if (confirm('모든 알림을 삭제하시겠습니까?')) deleteAllMutation.mutate(); }}
+              className="text-sm text-red-400 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+            >
+              전체 삭제
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {isLoading ? (
@@ -66,6 +86,12 @@ export default function NotificationsPage() {
                   <p className={cn('text-sm', !n.isRead && 'font-medium')}>{n.message}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatRelativeTime(n.createdAt)}</p>
                 </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(n.id); }}
+                  className="p-1 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors flex-shrink-0"
+                >
+                  <X size={14} />
+                </button>
               </div>
             </button>
           ))}

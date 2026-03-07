@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, Users, MessageCircle, Wallet, Menu } from 'lucide-react';
+import { FileText, Users, MessageCircle, Mail, Wallet, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/feed', label: '피드', icon: FileText },
   { href: '/meetings', label: '모임', icon: Users },
   { href: '/chat', label: '채팅', icon: MessageCircle },
-  { href: '/finance', label: '회비', icon: Wallet },
+  { href: '/dm', label: '편지함', icon: Mail },
   { href: '/more', label: '더보기', icon: Menu },
 ];
 
@@ -17,7 +17,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 z-50 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl border-t border-gray-200/40 dark:border-gray-700/40 z-50 md:hidden">
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);

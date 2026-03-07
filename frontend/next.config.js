@@ -4,6 +4,9 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'http', hostname: '192.168.0.32' },
+      { protocol: 'https', hostname: 'aidongdong.co.kr' },
+      { protocol: 'https', hostname: '*.aidongdong.co.kr' },
       { protocol: 'https', hostname: '*.amazonaws.com' },
       { protocol: 'https', hostname: '*.cloudfront.net' },
       { protocol: 'https', hostname: '*.r2.cloudflarestorage.com' },

@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { User, Search, Megaphone, Bell, Settings, ShieldCheck, ChevronRight, LogOut } from 'lucide-react';
+import { User, Search, Megaphone, Bell, Mail, Settings, ShieldCheck, ChevronRight, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
+import { disconnectSocket } from '@/lib/socket';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { getRoleBadge } from '@/lib/utils';
 import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
@@ -14,18 +16,21 @@ const menuItems = [
   { href: '/members', label: '동문 찾기', icon: Search },
   { href: '/announcements', label: '공지사항', icon: Megaphone },
   { href: '/notifications', label: '알림', icon: Bell },
-  { href: '/dm', label: '다이렉트 메시지', icon: Bell },
+  { href: '/dm', label: '편지함', icon: Mail },
   { href: '/settings', label: '설정', icon: Settings },
 ];
 
 export default function MorePage() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isAdmin = user?.role === 'PRESIDENT' || user?.role === 'VICE_PRESIDENT';
   const role = user ? getRoleBadge(user.role) : null;
 
   const handleLogout = async () => {
     try { await api('/auth/logout', { method: 'POST' }); } catch {}
+    disconnectSocket();
+    queryClient.clear();
     logout();
     router.push('/');
   };

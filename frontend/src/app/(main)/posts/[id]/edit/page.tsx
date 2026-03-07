@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ImagePlus, X } from 'lucide-react';
-import { api, apiUpload } from '@/lib/api';
+import { ArrowLeft, ImagePlus, Paperclip, X, FileText } from 'lucide-react';
+import { api, apiUpload, resizeImage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import type { Post, PostCategory } from '@/types';
@@ -23,7 +23,9 @@ export default function EditPostPage() {
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<PostCategory>('FREE');
   const [images, setImages] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ['post', id],
@@ -36,19 +38,44 @@ export default function EditPostPage() {
       setContent(post.content);
       setCategory(post.category);
       setImages(post.images);
+      setAttachments(post.attachments || []);
     }
   }, [post]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setUploading(true);
+    try {
+      const urls: string[] = [];
+      await Promise.all(Array.from(files).map(async (f) => {
+        const resized = await resizeImage(f);
+        const formData = new FormData();
+        formData.append('file', resized);
+        const { url } = await apiUpload<{ url: string }>('/upload/image', formData);
+        urls.push(url);
+      }));
+      setImages((prev) => [...prev, ...urls]);
+    } catch {
+      alert('이미지 업로드에 실패했습니다.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const { url } = await apiUpload<{ url: string }>('/upload/image', formData);
-      setImages((prev) => [...prev, url]);
+      const { url } = await apiUpload<{ url: string }>('/upload/file', formData);
+      setAttachments((prev) => [...prev, url]);
     } catch {
-      alert('이미지 업로드에 실패했습니다.');
+      alert('파일 업로드에 실패했습니다.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -58,7 +85,7 @@ export default function EditPostPage() {
     try {
       await api<Post>(`/posts/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ title, content, category, images }),
+        body: JSON.stringify({ title, content, category, images, attachments }),
       });
       router.push(`/posts/${id}`);
     } catch (err) {
@@ -127,11 +154,44 @@ export default function EditPostPage() {
         </div>
       )}
 
-      <div className="border-t border-gray-100 dark:border-gray-800 py-3">
+      {attachments.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {attachments.map((url, i) => {
+            const filename = url.split('/').pop() || 'file';
+            const ext = filename.substring(filename.lastIndexOf('.'));
+            return (
+              <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <FileText size={16} className="text-gray-400 shrink-0" />
+                <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">첨부파일{i + 1}{ext}</span>
+                <button
+                  onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {uploading && (
+        <div className="flex items-center gap-2 py-2 text-sm text-gray-500 dark:text-gray-400">
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+          업로드 중...
+        </div>
+      )}
+
+      <div className="border-t border-gray-100 dark:border-gray-800 py-3 flex gap-4">
         <label className="flex items-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
           <ImagePlus size={20} />
-          <span className="text-sm">이미지 추가</span>
-          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+          <span className="text-sm">이미지</span>
+          <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
+        </label>
+        <label className="flex items-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
+          <Paperclip size={20} />
+          <span className="text-sm">파일 첨부</span>
+          <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.txt,.zip" onChange={handleFileUpload} className="hidden" />
         </label>
       </div>
     </div>

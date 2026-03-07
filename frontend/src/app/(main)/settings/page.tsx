@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Camera, Sun, Moon, Monitor } from 'lucide-react';
-import { api, apiUpload } from '@/lib/api';
+import { ArrowLeft, Camera, Sun, Moon, Monitor, Trash2 } from 'lucide-react';
+import { api, apiUpload, resizeImage } from '@/lib/api';
+import { disconnectSocket } from '@/lib/socket';
 import { useAuthStore } from '@/lib/store';
 import { useThemeStore } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const { user, setUser, logout } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
+  const [saveMessage, setSaveMessage] = useState('');
   const [form, setForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
@@ -38,12 +40,19 @@ export default function SettingsPage() {
     onSuccess: (data) => {
       setUser(data);
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      setSaveMessage('저장되었습니다');
+      setTimeout(() => setSaveMessage(''), 3000);
+    },
+    onError: () => {
+      setSaveMessage('저장에 실패했습니다');
+      setTimeout(() => setSaveMessage(''), 3000);
     },
   });
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    let file = e.target.files?.[0];
     if (!file) return;
+    file = await resizeImage(file);
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -58,12 +67,27 @@ export default function SettingsPage() {
     }
   };
 
+  const handleImageDelete = async () => {
+    if (!confirm('프로필 이미지를 삭제하시겠습니까?')) return;
+    try {
+      const updated = await api<User>('/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ profileImage: '' }),
+      });
+      setUser(updated);
+    } catch {
+      alert('이미지 삭제에 실패했습니다.');
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await api('/auth/logout', { method: 'POST' });
     } catch {
       // ignore
     }
+    disconnectSocket();
+    queryClient.clear();
     logout();
     router.push('/');
   };
@@ -78,14 +102,23 @@ export default function SettingsPage() {
       </div>
 
       {/* Profile Image */}
-      <div className="flex justify-center mb-6">
+      <div className="flex flex-col items-center gap-2 mb-6">
         <label className="relative cursor-pointer">
           <Avatar src={user?.profileImage} name={user?.name || '?'} size="xl" />
-          <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full flex items-center justify-center">
+          <div className="absolute bottom-0 right-0 w-8 h-8 bg-white/70 dark:bg-gray-900/70 text-gray-900 dark:text-white backdrop-blur-md border border-gray-200/40 dark:border-gray-700/40 rounded-full flex items-center justify-center">
             <Camera size={14} />
           </div>
           <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
         </label>
+        {user?.profileImage && (
+          <button
+            onClick={handleImageDelete}
+            className="flex items-center gap-1 text-xs text-red-400 hover:text-red-500 mt-1"
+          >
+            <Trash2 size={12} />
+            이미지 삭제
+          </button>
+        )}
       </div>
 
       {/* Form */}
@@ -138,8 +171,8 @@ export default function SettingsPage() {
                   className={cn(
                     'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors',
                     theme === t.value
-                      ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                      : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                      ? 'bg-gray-900/10 text-gray-900 dark:bg-white/10 dark:text-white backdrop-blur-md'
+                      : 'bg-gray-100/60 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400'
                   )}
                 >
                   <Icon size={16} />
@@ -157,6 +190,15 @@ export default function SettingsPage() {
         >
           {saveMutation.isPending ? '저장 중...' : '저장'}
         </button>
+
+        {saveMessage && (
+          <p className={cn(
+            'text-center text-sm font-medium py-2 rounded-lg',
+            saveMessage.includes('실패') ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-green-600 bg-green-50 dark:bg-green-900/20'
+          )}>
+            {saveMessage}
+          </p>
+        )}
 
         <button onClick={handleLogout} className="btn-secondary w-full text-red-500 !border-red-200 hover:!bg-red-50 dark:!border-red-800 dark:hover:!bg-red-900/30">
           로그아웃

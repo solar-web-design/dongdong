@@ -6,9 +6,8 @@ let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     socket = io(`${SOCKET_URL}/chat`, {
-      auth: { token },
+      withCredentials: true,
       autoConnect: false,
       transports: ['websocket'],
     });
@@ -19,8 +18,6 @@ export function getSocket(): Socket {
 export function connectSocket(): Socket {
   const s = getSocket();
   if (!s.connected) {
-    const token = localStorage.getItem('accessToken');
-    s.auth = { token };
     s.connect();
   }
   return s;

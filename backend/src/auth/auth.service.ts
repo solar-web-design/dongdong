@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -17,6 +18,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private notificationsService: NotificationsService,
   ) {}
 
   private getJwtSecret(): string {
@@ -60,12 +62,38 @@ export class AuthService {
       },
     });
 
+    // 회장에게 가입 신청 알림 발송
+    this.notifyPresidents(user.name, tenantId).catch(() => {});
+
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       status: user.status,
     };
+  }
+
+  private async notifyPresidents(applicantName: string, tenantId?: string) {
+    const presidents = await this.prisma.user.findMany({
+      where: {
+        role: 'PRESIDENT',
+        status: 'ACTIVE',
+        ...(tenantId && { tenantId }),
+      },
+      select: { id: true },
+    });
+    await Promise.all(
+      presidents.map((p) =>
+        this.notificationsService.create(
+          p.id,
+          'APPROVAL',
+          '새 가입 신청',
+          `${applicantName}님이 가입 신청했습니다.`,
+          '/admin/approvals',
+          tenantId,
+        ),
+      ),
+    );
   }
 
   async login(dto: LoginDto) {

@@ -116,6 +116,12 @@ dongdong/
 - [x] SuperAdmin 대시보드 (`/super-admin`)
 - [x] NAS 배포 완료
 
+### Phase 8: UI/UX 개선 및 부가기능 ✅ 완료
+- [x] DM 편지 삭제 기능 (백엔드 DELETE + 프론트 삭제 버튼)
+- [x] 글래스모피즘 UI 전면 적용 (버튼/탭/FAB → backdrop-blur + 반투명)
+- [x] 피드 페이지에 공지사항 섹션 추가 (최근 3개)
+- [x] 알림 개별/전체 삭제 기능 (백엔드 DELETE + 프론트 X 버튼, 전체 삭제)
+
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인
 - 동문 프로필 (LinkedIn 스타일)

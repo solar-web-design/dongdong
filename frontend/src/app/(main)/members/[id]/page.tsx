@@ -72,11 +72,11 @@ export default function MemberProfilePage() {
 
       <div className="flex gap-3">
         <button
-          onClick={() => router.push(`/dm/${member.id}`)}
+          onClick={() => router.push(`/dm/write?to=${member.id}`)}
           className="btn-primary flex-1 flex items-center justify-center gap-2"
         >
           <MessageCircle size={18} />
-          DM 보내기
+          편지 보내기
         </button>
       </div>
     </div>

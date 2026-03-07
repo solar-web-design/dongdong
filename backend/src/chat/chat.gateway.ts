@@ -11,10 +11,12 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ChatService } from './chat.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
   namespace: '/chat',
-  cors: { origin: process.env.CORS_ORIGIN || 'http://localhost:3000' },
+  cors: { origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'], credentials: true },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -26,13 +28,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private jwtService: JwtService,
     private configService: ConfigService,
     private chatService: ChatService,
+    private notificationsService: NotificationsService,
+    private prisma: PrismaService,
   ) {}
 
   async handleConnection(client: Socket) {
     try {
-      const token =
+      // Try auth token, authorization header, then cookie
+      let token =
         client.handshake.auth?.token ||
         client.handshake.headers?.authorization?.replace('Bearer ', '');
+
+      if (!token) {
+        const cookieHeader = client.handshake.headers?.cookie;
+        if (cookieHeader) {
+          const match = cookieHeader.match(/(?:^|;\s*)accessToken=([^;]*)/);
+          if (match) token = match[1];
+        }
+      }
 
       if (!token) {
         client.disconnect();
@@ -110,14 +123,55 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     }
 
-    const message = await this.chatService.sendMessage(
-      data.roomId,
-      userId,
-      data.content,
-      data.images,
-    );
+    try {
+      const message = await this.chatService.sendMessage(
+        data.roomId,
+        userId,
+        data.content,
+        data.images,
+      );
 
-    this.server.to(data.roomId).emit('new_message', message);
+      this.server.to(data.roomId).emit('new_message', message);
+
+      // Create notifications for offline members
+      const members = await this.prisma.chatRoomMember.findMany({
+        where: { chatRoomId: data.roomId, userId: { not: userId } },
+        select: { userId: true },
+      });
+      const senderName = message.sender?.name || '알 수 없음';
+      for (const member of members) {
+        if (!this.userSockets.has(member.userId)) {
+          this.notificationsService.create(
+            member.userId,
+            'CHAT',
+            `${senderName}님의 메시지`,
+            data.content.length > 50 ? data.content.slice(0, 50) + '...' : data.content,
+            `/chat/${data.roomId}`,
+          ).catch(() => {});
+        }
+      }
+    } catch {
+      client.emit('error', { message: '메시지 전송에 실패했습니다' });
+    }
+  }
+
+  notifyNewRoom(room: Record<string, unknown>, memberIds: string[]) {
+    for (const memberId of memberIds) {
+      const sockets = this.userSockets.get(memberId);
+      if (sockets) {
+        for (const socketId of sockets) {
+          this.server.to(socketId).emit('new_room', room);
+        }
+      }
+    }
+  }
+
+  broadcastPostDeleted(postId: string) {
+    this.server.emit('post_deleted', { postId });
+  }
+
+  broadcastPostCreated(postId: string) {
+    this.server.emit('post_created', { postId });
   }
 
   @SubscribeMessage('typing')
@@ -137,6 +191,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const userId = client.data.userId;
     if (!userId || !data?.roomId || typeof data.roomId !== 'string') return;
-    await this.chatService.markAsRead(data.roomId, userId);
+    try {
+      await this.chatService.markAsRead(data.roomId, userId);
+    } catch {
+      // Ignore - user may not be a member
+    }
   }
 }

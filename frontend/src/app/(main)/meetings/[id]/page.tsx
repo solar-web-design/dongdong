@@ -85,8 +85,8 @@ export default function MeetingDetailPage() {
             className={cn(
               'flex-1 py-3 rounded-xl text-sm font-medium transition-colors',
               myRsvp === btn.value
-                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                ? 'bg-gray-900/10 text-gray-900 dark:bg-white/10 dark:text-white backdrop-blur-md'
+                : 'bg-gray-100/60 text-gray-500 hover:bg-gray-200/60 dark:bg-gray-800/60 dark:text-gray-400 dark:hover:bg-gray-700/60'
             )}
           >
             {btn.label}

@@ -64,6 +64,51 @@ export async function api<T>(endpoint: string, options: FetchOptions = {}): Prom
   return res.json();
 }
 
+const MAX_IMAGE_WIDTH = 1920;
+const MAX_IMAGE_HEIGHT = 1920;
+const IMAGE_QUALITY = 0.8;
+
+export async function resizeImage(file: File): Promise<File> {
+  if (!file.type.startsWith('image/')) return file;
+  if (file.type === 'image/gif') return file;
+  if (file.size <= 500 * 1024) return file;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width <= MAX_IMAGE_WIDTH && height <= MAX_IMAGE_HEIGHT && file.size <= 2 * 1024 * 1024) {
+        URL.revokeObjectURL(img.src);
+        resolve(file);
+        return;
+      }
+      const ratio = Math.min(MAX_IMAGE_WIDTH / width, MAX_IMAGE_HEIGHT / height, 1);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(img.src);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const ext = file.type === 'image/png' ? '.png' : '.jpg';
+            resolve(new File([blob], file.name.replace(/.[^.]+$/, ext), { type: blob.type }));
+          } else {
+            resolve(file);
+          }
+        },
+        file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+        IMAGE_QUALITY,
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 export async function apiUpload<T>(endpoint: string, formData: FormData): Promise<T> {
   let res = await fetch(`${API_BASE}${endpoint}`, {
     method: 'POST',

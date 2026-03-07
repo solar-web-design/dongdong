@@ -27,4 +27,10 @@ export class CreatePostDto {
   @ArrayMaxSize(10)
   @IsString({ each: true })
   images?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @IsString({ each: true })
+  attachments?: string[];
 }

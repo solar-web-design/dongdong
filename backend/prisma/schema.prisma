@@ -313,6 +313,7 @@ model ChatMessage {
 
 model DirectMessage {
   id         String   @id @default(uuid())
+  title      String   @default("")
   content    String
   isRead     Boolean  @default(false)
 

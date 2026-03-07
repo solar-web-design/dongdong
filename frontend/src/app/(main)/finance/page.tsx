@@ -82,7 +82,7 @@ export default function FinancePage() {
           onClick={() => setTab('payments')}
           className={cn(
             'px-4 py-1.5 rounded-full text-sm font-medium',
-            tab === 'payments' ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+            tab === 'payments' ? 'bg-gray-900/10 text-gray-900 dark:bg-white/10 dark:text-white backdrop-blur-md' : 'bg-gray-100/60 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400'
           )}
         >
           내 납부내역
@@ -92,7 +92,7 @@ export default function FinancePage() {
             onClick={() => setTab('books')}
             className={cn(
               'px-4 py-1.5 rounded-full text-sm font-medium',
-              tab === 'books' ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+              tab === 'books' ? 'bg-gray-900/10 text-gray-900 dark:bg-white/10 dark:text-white backdrop-blur-md' : 'bg-gray-100/60 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400'
             )}
           >
             회계장부

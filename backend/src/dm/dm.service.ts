@@ -7,83 +7,24 @@ import { QueryDmDto } from './dto/query-dm.dto';
 export class DmService {
   constructor(private prisma: PrismaService) {}
 
-  async getConversations(userId: string) {
-    // Get all unique conversation partners
-    const sent = await this.prisma.directMessage.findMany({
-      where: { senderId: userId },
-      select: { receiverId: true },
-      distinct: ['receiverId'],
-    });
-    const received = await this.prisma.directMessage.findMany({
-      where: { receiverId: userId },
-      select: { senderId: true },
-      distinct: ['senderId'],
-    });
-
-    const partnerIds = [
-      ...new Set([
-        ...sent.map((s) => s.receiverId),
-        ...received.map((r) => r.senderId),
-      ]),
-    ];
-
-    const conversations = await Promise.all(
-      partnerIds.map(async (partnerId) => {
-        const [user, lastMessage, unreadCount] = await Promise.all([
-          this.prisma.user.findUnique({
-            where: { id: partnerId },
-            select: { id: true, name: true, profileImage: true },
-          }),
-          this.prisma.directMessage.findFirst({
-            where: {
-              OR: [
-                { senderId: userId, receiverId: partnerId },
-                { senderId: partnerId, receiverId: userId },
-              ],
-            },
-            orderBy: { createdAt: 'desc' },
-          }),
-          this.prisma.directMessage.count({
-            where: {
-              senderId: partnerId,
-              receiverId: userId,
-              isRead: false,
-            },
-          }),
-        ]);
-        return { user, lastMessage, unreadCount };
-      }),
-    );
-
-    // Sort by last message time
-    conversations.sort(
-      (a, b) =>
-        (b.lastMessage?.createdAt.getTime() || 0) -
-        (a.lastMessage?.createdAt.getTime() || 0),
-    );
-
-    return { data: conversations };
-  }
-
-  async getMessages(userId: string, partnerId: string, query: QueryDmDto) {
-    await this.verifyUserExists(partnerId);
-
-    const { cursor, limit = 50 } = query;
-    const messages = await this.prisma.directMessage.findMany({
+  async getReceivedLetters(userId: string, query: QueryDmDto) {
+    const { cursor, limit = 20 } = query;
+    const letters = await this.prisma.directMessage.findMany({
       where: {
-        OR: [
-          { senderId: userId, receiverId: partnerId },
-          { senderId: partnerId, receiverId: userId },
-        ],
+        receiverId: userId,
+        NOT: { senderId: userId },
         ...(cursor && { createdAt: { lt: new Date(cursor) } }),
       },
       take: limit + 1,
       orderBy: { createdAt: 'desc' },
-      include: { sender: { select: { id: true, name: true, profileImage: true } } },
+      include: {
+        sender: { select: { id: true, name: true, profileImage: true } },
+        receiver: { select: { id: true, name: true, profileImage: true } },
+      },
     });
 
-    const hasMore = messages.length > limit;
-    const data = hasMore ? messages.slice(0, limit) : messages;
+    const hasMore = letters.length > limit;
+    const data = hasMore ? letters.slice(0, limit) : letters;
 
     return {
       data,
@@ -91,28 +32,94 @@ export class DmService {
     };
   }
 
-  async sendMessage(senderId: string, receiverId: string, dto: SendDmDto) {
+  async getSentLetters(userId: string, query: QueryDmDto) {
+    const { cursor, limit = 20 } = query;
+    const letters = await this.prisma.directMessage.findMany({
+      where: {
+        senderId: userId,
+        ...(cursor && { createdAt: { lt: new Date(cursor) } }),
+      },
+      take: limit + 1,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        sender: { select: { id: true, name: true, profileImage: true } },
+        receiver: { select: { id: true, name: true, profileImage: true } },
+      },
+    });
+
+    const hasMore = letters.length > limit;
+    const data = hasMore ? letters.slice(0, limit) : letters;
+
+    return {
+      data,
+      nextCursor: hasMore ? data[data.length - 1].createdAt.toISOString() : null,
+    };
+  }
+
+  async getLetter(userId: string, letterId: string) {
+    const letter = await this.prisma.directMessage.findUnique({
+      where: { id: letterId },
+      include: {
+        sender: { select: { id: true, name: true, profileImage: true } },
+        receiver: { select: { id: true, name: true, profileImage: true } },
+      },
+    });
+
+    if (!letter) throw new NotFoundException('편지를 찾을 수 없습니다');
+    if (letter.senderId !== userId && letter.receiverId !== userId) {
+      throw new NotFoundException('편지를 찾을 수 없습니다');
+    }
+
+    // Mark as read if receiver is viewing
+    if (letter.receiverId === userId && !letter.isRead) {
+      await this.prisma.directMessage.update({
+        where: { id: letterId },
+        data: { isRead: true },
+      });
+      letter.isRead = true;
+    }
+
+    return letter;
+  }
+
+  async sendLetter(senderId: string, receiverId: string, dto: SendDmDto) {
     await this.verifyUserExists(receiverId);
 
     return this.prisma.directMessage.create({
       data: {
+        title: dto.title,
         content: dto.content,
         senderId,
         receiverId,
       },
+      include: {
+        receiver: { select: { id: true, name: true, profileImage: true } },
+      },
     });
   }
 
-  async markAsRead(userId: string, partnerId: string) {
-    await this.prisma.directMessage.updateMany({
+  async getUnreadCount(userId: string) {
+    const count = await this.prisma.directMessage.count({
       where: {
-        senderId: partnerId,
         receiverId: userId,
         isRead: false,
       },
-      data: { isRead: true },
     });
-    return { message: '읽음 처리되었습니다' };
+    return { count };
+  }
+
+  async deleteLetter(userId: string, letterId: string) {
+    const letter = await this.prisma.directMessage.findUnique({
+      where: { id: letterId },
+    });
+
+    if (!letter) throw new NotFoundException('편지를 찾을 수 없습니다');
+    if (letter.senderId !== userId && letter.receiverId !== userId) {
+      throw new NotFoundException('편지를 찾을 수 없습니다');
+    }
+
+    await this.prisma.directMessage.delete({ where: { id: letterId } });
+    return { message: '편지가 삭제되었습니다' };
   }
 
   private async verifyUserExists(userId: string) {

@@ -142,6 +142,7 @@ export interface ChatMessage {
 
 export interface DirectMessage {
   id: string;
+  title: string;
   content: string;
   isRead: boolean;
   senderId: string;

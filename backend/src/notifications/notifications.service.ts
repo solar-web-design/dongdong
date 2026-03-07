@@ -51,6 +51,24 @@ export class NotificationsService {
     return { message: '전체 읽음 처리되었습니다' };
   }
 
+  async delete(id: string, userId: string) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id },
+    });
+    if (!notification || notification.userId !== userId) {
+      throw new NotFoundException('알림을 찾을 수 없습니다');
+    }
+    await this.prisma.notification.delete({ where: { id } });
+    return { message: '알림이 삭제되었습니다' };
+  }
+
+  async deleteAll(userId: string) {
+    await this.prisma.notification.deleteMany({
+      where: { userId },
+    });
+    return { message: '알림이 전체 삭제되었습니다' };
+  }
+
   async create(
     userId: string,
     type: NotificationType,

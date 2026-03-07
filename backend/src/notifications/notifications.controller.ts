@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Delete,
   Param,
   Query,
   UseGuards,
@@ -35,5 +36,18 @@ export class NotificationsController {
   @Patch('read-all')
   markAllAsRead(@CurrentUser('id') userId: string) {
     return this.notificationsService.markAllAsRead(userId);
+  }
+
+  @Delete(':id')
+  delete(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.notificationsService.delete(id, userId);
+  }
+
+  @Delete()
+  deleteAll(@CurrentUser('id') userId: string) {
+    return this.notificationsService.deleteAll(userId);
   }
 }

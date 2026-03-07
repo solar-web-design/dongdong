@@ -2,7 +2,7 @@ import {
   Controller,
   Get,
   Post,
-  Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -19,34 +19,49 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class DmController {
   constructor(private dmService: DmService) {}
 
-  @Get()
-  getConversations(@CurrentUser('id') userId: string) {
-    return this.dmService.getConversations(userId);
-  }
-
-  @Get(':userId')
-  getMessages(
-    @CurrentUser('id') myId: string,
-    @Param('userId') partnerId: string,
+  @Get('received')
+  getReceivedLetters(
+    @CurrentUser('id') userId: string,
     @Query() query: QueryDmDto,
   ) {
-    return this.dmService.getMessages(myId, partnerId, query);
+    return this.dmService.getReceivedLetters(userId, query);
+  }
+
+  @Get('sent')
+  getSentLetters(
+    @CurrentUser('id') userId: string,
+    @Query() query: QueryDmDto,
+  ) {
+    return this.dmService.getSentLetters(userId, query);
+  }
+
+  @Get('unread-count')
+  getUnreadCount(@CurrentUser('id') userId: string) {
+    return this.dmService.getUnreadCount(userId);
+  }
+
+  @Get(':letterId')
+  getLetter(
+    @CurrentUser('id') userId: string,
+    @Param('letterId') letterId: string,
+  ) {
+    return this.dmService.getLetter(userId, letterId);
+  }
+
+  @Delete(':letterId')
+  deleteLetter(
+    @CurrentUser('id') userId: string,
+    @Param('letterId') letterId: string,
+  ) {
+    return this.dmService.deleteLetter(userId, letterId);
   }
 
   @Post(':userId')
-  sendMessage(
+  sendLetter(
     @CurrentUser('id') myId: string,
     @Param('userId') receiverId: string,
     @Body() dto: SendDmDto,
   ) {
-    return this.dmService.sendMessage(myId, receiverId, dto);
-  }
-
-  @Patch(':userId/read')
-  markAsRead(
-    @CurrentUser('id') myId: string,
-    @Param('userId') partnerId: string,
-  ) {
-    return this.dmService.markAsRead(myId, partnerId);
+    return this.dmService.sendLetter(myId, receiverId, dto);
   }
 }

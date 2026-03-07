@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FileText, Users, MessageCircle, Wallet, Bell,
+  FileText, Users, MessageCircle, Mail, Wallet, Bell,
   Megaphone, Settings, ShieldCheck, User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ const menuItems = [
   { href: '/feed', label: '피드', icon: FileText },
   { href: '/meetings', label: '모임', icon: Users },
   { href: '/chat', label: '채팅', icon: MessageCircle },
+  { href: '/dm', label: '편지함', icon: Mail },
   { href: '/finance', label: '회비', icon: Wallet },
   { href: '/members', label: '동문 찾기', icon: User },
   { href: '/announcements', label: '공지사항', icon: Megaphone },
@@ -26,7 +27,7 @@ export default function Sidebar() {
   const isAdmin = user?.role === 'PRESIDENT' || user?.role === 'VICE_PRESIDENT';
 
   return (
-    <aside className="hidden md:flex flex-col w-60 h-screen sticky top-0 border-r border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 p-4">
+    <aside className="hidden md:flex flex-col w-60 h-screen sticky top-0 border-r border-gray-200/40 dark:border-gray-700/40 bg-white/60 dark:bg-gray-950/60 backdrop-blur-xl p-4">
       <Link href="/feed" className="text-2xl font-bold tracking-tight mb-8 px-3">
         동동
       </Link>
@@ -42,8 +43,8 @@ export default function Sidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-gray-900/10 text-gray-900 dark:bg-white/10 dark:text-white backdrop-blur-md shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-900/5 dark:hover:bg-white/5'
               )}
             >
               <Icon size={20} />
@@ -57,8 +58,8 @@ export default function Sidebar() {
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
               pathname.startsWith('/admin')
-                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-gray-900/10 text-gray-900 dark:bg-white/10 dark:text-white backdrop-blur-md shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-900/5 dark:hover:bg-white/5'
             )}
           >
             <ShieldCheck size={20} />

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
-import { ArrowLeft, Heart, MoreVertical, Send, Pencil, Trash2, Flag } from 'lucide-react';
+import { ArrowLeft, Heart, MoreVertical, Send, Pencil, Trash2, Flag, FileText, Download } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatRelativeTime, getCategoryLabel } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
@@ -25,9 +25,10 @@ export default function PostDetailPage() {
   const [reportCommentId, setReportCommentId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { data: post, isLoading } = useQuery({
+  const { data: post, isLoading, isError } = useQuery({
     queryKey: ['post', id],
     queryFn: () => api<Post>(`/posts/${id}`),
+    retry: false,
   });
 
   useEffect(() => {
@@ -78,7 +79,19 @@ export default function PostDetailPage() {
   };
 
   if (isLoading) return <LoadingSpinner />;
-  if (!post) return null;
+  if (isError || !post) return (
+    <div className="flex flex-col items-center justify-center py-20 px-4">
+      <div className="text-6xl mb-4">🗑️</div>
+      <h2 className="text-lg font-bold mb-2">삭제된 게시글입니다</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">이 게시글은 작성자에 의해 삭제되었거나 존재하지 않습니다.</p>
+      <button
+        onClick={() => router.push('/feed')}
+        className="btn-primary"
+      >
+        피드로 돌아가기
+      </button>
+    </div>
+  );
 
   return (
     <div className="px-4">
@@ -154,6 +167,32 @@ export default function PostDetailPage() {
               <Image src={img} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 672px" />
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Attachments */}
+      {post.attachments?.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {post.attachments.map((url, i) => {
+            const filename = url.split('/').pop() || 'file';
+            const ext = filename.substring(filename.lastIndexOf('.'));
+            return (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <FileText size={20} className="text-gray-400 shrink-0" />
+                <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
+                  첨부파일{i + 1}{ext}
+                </span>
+                <Download size={16} className="text-gray-400 shrink-0" />
+              </a>
+            );
+          })}
         </div>
       )}
 

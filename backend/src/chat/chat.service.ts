@@ -48,6 +48,11 @@ export class ChatService {
   async createRoom(userId: string, dto: CreateRoomDto) {
     const allMemberIds = [...new Set([userId, ...dto.memberIds])];
 
+    // DM은 정확히 2명만 허용
+    if (dto.type === 'DM' && allMemberIds.length !== 2) {
+      throw new ForbiddenException('DM은 상대방 1명만 선택할 수 있습니다');
+    }
+
     const room = await this.prisma.chatRoom.create({
       data: {
         name: dto.name,
@@ -79,11 +84,22 @@ export class ChatService {
       },
       take: limit + 1,
       orderBy: { createdAt: 'desc' },
-      include: { sender: { select: { id: true, name: true, profileImage: true } } },
     });
 
-    const hasMore = messages.length > limit;
-    const data = hasMore ? messages.slice(0, limit) : messages;
+    // Enrich messages with sender info
+    const senderIds = [...new Set(messages.map((m) => m.senderId))];
+    const senders = await this.prisma.user.findMany({
+      where: { id: { in: senderIds } },
+      select: { id: true, name: true, profileImage: true },
+    });
+    const senderMap = new Map(senders.map((s) => [s.id, s]));
+    const enrichedMessages = messages.map((m) => ({
+      ...m,
+      sender: senderMap.get(m.senderId) || null,
+    }));
+
+    const hasMore = enrichedMessages.length > limit;
+    const data = hasMore ? enrichedMessages.slice(0, limit) : enrichedMessages;
 
     return {
       data,
@@ -101,20 +117,44 @@ export class ChatService {
 
     const message = await this.prisma.chatMessage.create({
       data: { chatRoomId: roomId, senderId, content, images: images || [] },
-      include: { sender: { select: { id: true, name: true, profileImage: true } } },
     });
+
+    const sender = await this.prisma.user.findUnique({
+      where: { id: senderId },
+      select: { id: true, name: true, profileImage: true },
+    });
+
+    const enrichedMessage = { ...message, sender };
 
     await this.prisma.chatRoom.update({
       where: { id: roomId },
       data: { updatedAt: new Date() },
     });
 
-    return message;
+    return enrichedMessage;
+  }
+
+  async leaveRoom(roomId: string, userId: string) {
+    await this.verifyMembership(roomId, userId);
+
+    await this.prisma.chatRoomMember.delete({
+      where: { chatRoomId_userId: { chatRoomId: roomId, userId } },
+    });
+
+    // 남은 멤버가 없으면 채팅방과 메시지 삭제
+    const remaining = await this.prisma.chatRoomMember.count({
+      where: { chatRoomId: roomId },
+    });
+
+    if (remaining === 0) {
+      await this.prisma.chatMessage.deleteMany({ where: { chatRoomId: roomId } });
+      await this.prisma.chatRoom.delete({ where: { id: roomId } });
+    }
   }
 
   async markAsRead(roomId: string, userId: string) {
-    await this.prisma.chatRoomMember.update({
-      where: { chatRoomId_userId: { chatRoomId: roomId, userId } },
+    await this.prisma.chatRoomMember.updateMany({
+      where: { chatRoomId: roomId, userId },
       data: { lastReadAt: new Date() },
     });
   }

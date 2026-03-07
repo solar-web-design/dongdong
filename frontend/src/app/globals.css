@@ -4,40 +4,57 @@
 
 @layer base {
   body {
-    @apply bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+    @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(0,0,0,0.02) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.03) 0%, transparent 50%);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-gray-900 text-white px-6 py-3 rounded-xl font-medium
-           hover:bg-gray-800 active:bg-gray-700 transition-colors
-           disabled:bg-gray-300 disabled:cursor-not-allowed
-           dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200 dark:disabled:bg-gray-700 dark:disabled:text-gray-500;
+    @apply bg-gray-900/15 text-gray-900 px-6 py-3 rounded-xl font-medium
+           backdrop-blur-md border border-gray-900/10
+           hover:bg-gray-900/25 active:bg-gray-900/30 transition-all
+           disabled:bg-gray-200/50 disabled:text-gray-400 disabled:cursor-not-allowed
+           dark:bg-white/15 dark:text-white dark:border-white/10
+           dark:hover:bg-white/25 dark:disabled:bg-gray-800/50 dark:disabled:text-gray-600;
   }
   .btn-secondary {
-    @apply border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-medium
-           hover:bg-gray-50 active:bg-gray-100 transition-colors
-           dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700;
+    @apply border border-gray-200/60 text-gray-700 px-6 py-3 rounded-xl font-medium
+           bg-white/50 backdrop-blur-sm
+           hover:bg-white/80 active:bg-white transition-all
+           dark:border-gray-700/60 dark:text-gray-300 dark:bg-gray-800/50 dark:hover:bg-gray-800/80;
   }
   .btn-kakao {
     @apply bg-[#FEE500] text-[#191919] px-6 py-3 rounded-xl font-medium
            hover:bg-[#FDD800] transition-colors;
   }
   .btn-google {
-    @apply bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-medium
-           hover:bg-gray-50 transition-colors
-           dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700;
+    @apply bg-white/70 border border-gray-200/60 text-gray-700 px-6 py-3 rounded-xl font-medium
+           backdrop-blur-sm hover:bg-white/90 transition-all
+           dark:bg-gray-800/50 dark:border-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-700/70;
   }
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-200 rounded-xl
-           focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
+    @apply w-full px-4 py-3 border border-gray-200/60 rounded-xl
+           bg-white/60 backdrop-blur-sm
+           focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-300
+           focus:bg-white/80
            placeholder:text-gray-400 transition-all
-           dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100
-           dark:focus:ring-gray-100 dark:placeholder:text-gray-600;
+           dark:bg-gray-900/40 dark:border-gray-700/60 dark:text-gray-100
+           dark:focus:ring-gray-100/20 dark:focus:bg-gray-900/60 dark:placeholder:text-gray-600;
   }
   .card {
-    @apply bg-white rounded-2xl border border-gray-100 shadow-sm
-           dark:bg-gray-900 dark:border-gray-800;
+    @apply bg-white/70 rounded-2xl border border-gray-200/40 shadow-sm
+           backdrop-blur-md
+           dark:bg-gray-900/50 dark:border-gray-700/40;
+  }
+  .glass {
+    @apply bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg shadow-black/[0.03]
+           dark:bg-gray-900/60 dark:border-gray-700/30;
+  }
+  .glass-subtle {
+    @apply bg-white/40 backdrop-blur-md border border-gray-200/30
+           dark:bg-gray-900/40 dark:border-gray-700/20;
   }
 }

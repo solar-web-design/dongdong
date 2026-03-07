@@ -9,7 +9,11 @@ export class UploadService {
     this.baseUrl = this.configService.get<string>('APP_URL', 'http://localhost:3001');
   }
 
-  uploadImage(file: Express.Multer.File): { url: string } {
-    return { url: `${this.baseUrl}/uploads/${file.filename}` };
+  uploadFile(file: Express.Multer.File): { url: string; originalName: string; size: number } {
+    return {
+      url: `${this.baseUrl}/uploads/${file.filename}`,
+      originalName: file.originalname,
+      size: file.size,
+    };
   }
 }

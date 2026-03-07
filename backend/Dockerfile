@@ -1,11 +1,13 @@
 # Stage 1: Install dependencies
 FROM node:20-alpine AS deps
+RUN apk add --no-cache openssl
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Stage 2: Build
 FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -16,15 +18,22 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nestjs && \
+RUN apk add --no-cache openssl && \
+    addgroup --system --gid 1001 nestjs && \
     adduser --system --uid 1001 nestjs
 
 COPY --from=builder /app/package.json /app/package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --legacy-peer-deps
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+RUN npx prisma generate
+
+RUN mkdir -p uploads && chown -R nestjs:nestjs /app
 
 USER nestjs
 

@@ -38,7 +38,7 @@ export default function MeetingsPage() {
             onClick={() => setStatus(tab.value)}
             className={cn(
               'px-4 py-1.5 rounded-full text-sm font-medium',
-              status === tab.value ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+              status === tab.value ? 'bg-gray-900/10 text-gray-900 dark:bg-white/10 dark:text-white backdrop-blur-md' : 'bg-gray-100/60 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400'
             )}
           >
             {tab.label}
@@ -85,7 +85,7 @@ export default function MeetingsPage() {
 
       <Link
         href="/meetings/create"
-        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 w-14 h-14 bg-gray-900 text-white dark:bg-white dark:text-gray-900 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors z-40"
+        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 w-14 h-14 bg-white/70 dark:bg-gray-900/70 text-gray-900 dark:text-white backdrop-blur-xl border border-gray-200/40 dark:border-gray-700/40 rounded-full flex items-center justify-center shadow-lg hover:bg-white/90 dark:hover:bg-gray-900/90 transition-colors z-40"
       >
         <Plus size={24} />
       </Link>
