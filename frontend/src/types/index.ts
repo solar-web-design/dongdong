@@ -174,6 +174,24 @@ export interface AccountBook {
   createdAt: string;
 }
 
+export type ReportReason = 'SPAM' | 'ABUSE' | 'HARASSMENT' | 'FALSE_INFO' | 'INAPPROPRIATE' | 'OTHER';
+
+export interface Report {
+  id: string;
+  type: 'POST' | 'COMMENT';
+  reason: ReportReason;
+  description?: string;
+  status: 'PENDING' | 'RESOLVED' | 'DISMISSED';
+  reporterId: string;
+  postId?: string;
+  commentId?: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  createdAt: string;
+  reporter?: { id: string; name: string; profileImage?: string };
+  target?: any;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;

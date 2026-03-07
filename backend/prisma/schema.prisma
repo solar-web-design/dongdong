@@ -73,6 +73,7 @@ model User {
   approvedById       String?
   approvedUsers      User[]           @relation("ApprovedByUser")
   announcements      Announcement[]
+  reports            Report[]
 
   @@map("users")
 }
@@ -371,4 +372,50 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt(sort: Desc)])
   @@map("notifications")
+}
+
+// ===================== 신고 =====================
+
+enum ReportType {
+  POST
+  COMMENT
+}
+
+enum ReportReason {
+  SPAM           // 스팸/광고
+  ABUSE          // 욕설/비방
+  HARASSMENT     // 괴롭힘/성희롱
+  FALSE_INFO     // 허위 정보
+  INAPPROPRIATE  // 부적절한 콘텐츠
+  OTHER          // 기타
+}
+
+enum ReportStatus {
+  PENDING   // 대기
+  RESOLVED  // 처리완료
+  DISMISSED // 반려
+}
+
+model Report {
+  id          String       @id @default(uuid())
+  type        ReportType
+  reason      ReportReason
+  description String?      // 상세 사유
+  status      ReportStatus @default(PENDING)
+
+  reporterId  String       // 신고자 User ID
+  postId      String?      // 게시글 신고 시
+  commentId   String?      // 댓글 신고 시
+
+  resolvedAt  DateTime?
+  resolvedBy  String?      // 처리자 User ID
+
+  reporter    User         @relation(fields: [reporterId], references: [id])
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@map("reports")
 }

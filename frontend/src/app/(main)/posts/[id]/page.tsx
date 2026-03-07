@@ -4,12 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
-import { ArrowLeft, Heart, MoreVertical, Send, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Heart, MoreVertical, Send, Pencil, Trash2, Flag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatRelativeTime, getCategoryLabel } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
 import Avatar from '@/components/Avatar';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import ReportModal from '@/components/ReportModal';
 import type { Post, Comment } from '@/types';
 
 export default function PostDetailPage() {
@@ -20,6 +21,8 @@ export default function PostDetailPage() {
   const [comment, setComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportCommentId, setReportCommentId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { data: post, isLoading } = useQuery({
@@ -84,32 +87,42 @@ export default function PostDetailPage() {
         <button onClick={() => router.back()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
           <ArrowLeft size={20} />
         </button>
-        {user?.id === post.authorId && (
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-            >
-              <MoreVertical size={20} />
-            </button>
-            {showMenu && (
-              <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
+            <MoreVertical size={20} />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+              {user?.id === post.authorId && (
+                <>
+                  <button
+                    onClick={() => { setShowMenu(false); router.push(`/posts/${id}/edit`); }}
+                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <Pencil size={14} /> 수정
+                  </button>
+                  <button
+                    onClick={() => { setShowMenu(false); handleDelete(); }}
+                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <Trash2 size={14} /> 삭제
+                  </button>
+                </>
+              )}
+              {user?.id !== post.authorId && (
                 <button
-                  onClick={() => { setShowMenu(false); router.push(`/posts/${id}/edit`); }}
-                  className="flex items-center gap-2 w-full px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  <Pencil size={14} /> 수정
-                </button>
-                <button
-                  onClick={() => { setShowMenu(false); handleDelete(); }}
+                  onClick={() => { setShowMenu(false); setShowReport(true); }}
                   className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
-                  <Trash2 size={14} /> 삭제
+                  <Flag size={14} /> 신고
                 </button>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Author */}
@@ -158,7 +171,7 @@ export default function PostDetailPage() {
       {/* Comments */}
       <div className="py-4">
         {post.comments?.map((c) => (
-          <CommentItem key={c.id} comment={c} onReply={(id) => setReplyTo(id)} />
+          <CommentItem key={c.id} comment={c} onReply={(id) => setReplyTo(id)} onReport={(id) => setReportCommentId(id)} currentUserId={user?.id} />
         ))}
       </div>
 
@@ -187,11 +200,18 @@ export default function PostDetailPage() {
           </button>
         </div>
       </div>
+
+      {showReport && (
+        <ReportModal type="POST" targetId={id} onClose={() => setShowReport(false)} />
+      )}
+      {reportCommentId && (
+        <ReportModal type="COMMENT" targetId={reportCommentId} onClose={() => setReportCommentId(null)} />
+      )}
     </div>
   );
 }
 
-function CommentItem({ comment, onReply, depth = 0 }: { comment: Comment; onReply: (id: string) => void; depth?: number }) {
+function CommentItem({ comment, onReply, onReport, currentUserId, depth = 0 }: { comment: Comment; onReply: (id: string) => void; onReport: (id: string) => void; currentUserId?: string; depth?: number }) {
   return (
     <div className={depth > 0 ? 'ml-8 mt-3' : 'mb-4'}>
       <div className="flex gap-2">
@@ -202,16 +222,27 @@ function CommentItem({ comment, onReply, depth = 0 }: { comment: Comment; onRepl
             <span className="text-xs text-gray-400 dark:text-gray-500">{formatRelativeTime(comment.createdAt)}</span>
           </div>
           <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{comment.content}</p>
-          <button
-            onClick={() => onReply(comment.id)}
-            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mt-1"
-          >
-            답글
-          </button>
+          <div className="flex items-center gap-3 mt-1">
+            <button
+              onClick={() => onReply(comment.id)}
+              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              답글
+            </button>
+            {currentUserId !== comment.authorId && (
+              <button
+                onClick={() => onReport(comment.id)}
+                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                title="신고"
+              >
+                <Flag size={12} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
       {comment.replies?.map((reply) => (
-        <CommentItem key={reply.id} comment={reply} onReply={onReply} depth={depth + 1} />
+        <CommentItem key={reply.id} comment={reply} onReply={onReply} onReport={onReport} currentUserId={currentUserId} depth={depth + 1} />
       ))}
     </div>
   );

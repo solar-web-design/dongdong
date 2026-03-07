@@ -68,6 +68,12 @@ dongdong/
 - [x] QA 테스트 (Backend 170개 + Frontend 123개 = 293개 전체 통과)
 - [x] DevOps 배포 설정 (Dockerfile, docker-compose, nginx 리버스 프록시)
 
+### Phase 6: 신고/관리 기능 ✅ 완료
+- [x] 게시글 신고 (백엔드: Report 모델, 마이그레이션, API)
+- [x] 게시글 신고 (프론트: 신고 버튼/사유 선택 모달)
+- [x] 관리자 신고 목록 조회 및 처리 (삭제/반려)
+- [x] 댓글 신고 (게시글 상세 페이지 내 Flag 버튼)
+
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인
 - 동문 프로필 (LinkedIn 스타일)
