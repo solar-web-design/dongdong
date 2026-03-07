@@ -3,7 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
@@ -13,10 +13,14 @@ import { QueryAnnouncementDto } from './dto/query-announcement.dto';
 export class AnnouncementsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(query: QueryAnnouncementDto) {
+  async findAll(query: QueryAnnouncementDto, tenantId?: string) {
     const { page = 1, limit = 20 } = query;
+    const where: Prisma.AnnouncementWhereInput = {
+      ...(tenantId && { tenantId }),
+    };
     const [data, total] = await Promise.all([
       this.prisma.announcement.findMany({
+        where,
         include: {
           author: { select: { id: true, name: true, profileImage: true } },
         },
@@ -24,14 +28,14 @@ export class AnnouncementsService {
         take: limit,
         orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
       }),
-      this.prisma.announcement.count(),
+      this.prisma.announcement.count({ where }),
     ]);
     return { data, total };
   }
 
-  async create(authorId: string, dto: CreateAnnouncementDto) {
+  async create(authorId: string, dto: CreateAnnouncementDto, tenantId?: string) {
     return this.prisma.announcement.create({
-      data: { ...dto, authorId },
+      data: { ...dto, authorId, ...(tenantId && { tenantId }) },
       include: {
         author: { select: { id: true, name: true, profileImage: true } },
       },

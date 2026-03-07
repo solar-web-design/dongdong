@@ -7,8 +7,10 @@ import {
   Param,
   Body,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import * as express from 'express';
 import { Role } from '@prisma/client';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
@@ -24,8 +26,8 @@ export class AnnouncementsController {
   constructor(private announcementsService: AnnouncementsService) {}
 
   @Get()
-  findAll(@Query() query: QueryAnnouncementDto) {
-    return this.announcementsService.findAll(query);
+  findAll(@Query() query: QueryAnnouncementDto, @Req() req: express.Request) {
+    return this.announcementsService.findAll(query, req.tenantId);
   }
 
   @Post()
@@ -33,8 +35,9 @@ export class AnnouncementsController {
   create(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateAnnouncementDto,
+    @Req() req: express.Request,
   ) {
-    return this.announcementsService.create(userId, dto);
+    return this.announcementsService.create(userId, dto, req.tenantId);
   }
 
   @Patch(':id')

@@ -6,8 +6,10 @@ import {
   Param,
   Body,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import * as express from 'express';
 import { Role } from '@prisma/client';
 import { FinanceService } from './finance.service';
 import { CreateFeeScheduleDto } from './dto/create-fee-schedule.dto';
@@ -26,14 +28,14 @@ export class FinanceController {
   // ---- Fee Schedules ----
 
   @Get('fees/schedules')
-  getFeeSchedules() {
-    return this.financeService.getFeeSchedules();
+  getFeeSchedules(@Req() req: express.Request) {
+    return this.financeService.getFeeSchedules(req.tenantId);
   }
 
   @Post('fees/schedules')
   @Roles(Role.TREASURER, Role.PRESIDENT)
-  createFeeSchedule(@Body() dto: CreateFeeScheduleDto) {
-    return this.financeService.createFeeSchedule(dto);
+  createFeeSchedule(@Body() dto: CreateFeeScheduleDto, @Req() req: express.Request) {
+    return this.financeService.createFeeSchedule(dto, req.tenantId);
   }
 
   @Get('fees/schedules/:id/payments')
@@ -61,13 +63,13 @@ export class FinanceController {
   // ---- Account Book ----
 
   @Get('finance/books')
-  getAccountBooks(@Query() query: QueryAccountBookDto) {
-    return this.financeService.getAccountBooks(query);
+  getAccountBooks(@Query() query: QueryAccountBookDto, @Req() req: express.Request) {
+    return this.financeService.getAccountBooks(query, req.tenantId);
   }
 
   @Post('finance/books')
   @Roles(Role.TREASURER)
-  createAccountBook(@Body() dto: CreateAccountBookDto) {
-    return this.financeService.createAccountBook(dto);
+  createAccountBook(@Body() dto: CreateAccountBookDto, @Req() req: express.Request) {
+    return this.financeService.createAccountBook(dto, req.tenantId);
   }
 }

@@ -7,8 +7,10 @@ import {
   Param,
   Body,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import * as express from 'express';
 import { Role } from '@prisma/client';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -24,8 +26,8 @@ export class PostsController {
   constructor(private postsService: PostsService) {}
 
   @Get()
-  findAll(@Query() query: QueryPostsDto) {
-    return this.postsService.findAll(query);
+  findAll(@Query() query: QueryPostsDto, @Req() req: express.Request) {
+    return this.postsService.findAll(query, req.tenantId);
   }
 
   @Get(':id')
@@ -34,8 +36,8 @@ export class PostsController {
   }
 
   @Post()
-  create(@CurrentUser('id') userId: string, @Body() dto: CreatePostDto) {
-    return this.postsService.create(userId, dto);
+  create(@CurrentUser('id') userId: string, @Body() dto: CreatePostDto, @Req() req: express.Request) {
+    return this.postsService.create(userId, dto, req.tenantId);
   }
 
   @Patch(':id')

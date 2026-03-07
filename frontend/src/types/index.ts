@@ -1,3 +1,20 @@
+export type TenantStatus = 'ACTIVE' | 'SUSPENDED' | 'TRIAL';
+
+export interface Tenant {
+  id: string;
+  slug: string;
+  name: string;
+  universityName: string;
+  logo?: string;
+  primaryColor: string;
+  description?: string;
+  status: TenantStatus;
+  maxMembers: number;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { users: number };
+}
+
 export type Role = 'PRESIDENT' | 'VICE_PRESIDENT' | 'TREASURER' | 'MEMBER';
 export type MemberStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'WITHDRAWN';
 export type PostCategory = 'FREE' | 'NEWS' | 'JOB' | 'MARKETPLACE';
@@ -15,6 +32,8 @@ export interface User {
   profileImage?: string;
   role: Role;
   status: MemberStatus;
+  isSuperAdmin?: boolean;
+  tenantId?: string;
   university: string;
   department?: string;
   admissionYear?: number;
@@ -35,6 +54,7 @@ export interface Post {
   content: string;
   category: PostCategory;
   images: string[];
+  attachments: string[];
   viewCount: number;
   likeCount: number;
   isPinned: boolean;
@@ -66,6 +86,7 @@ export interface Meeting {
   maxMembers?: number;
   status: MeetingStatus;
   fee: number;
+  memberCount?: number;
   members?: MeetingMember[];
   createdAt: string;
   updatedAt: string;

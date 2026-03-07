@@ -46,9 +46,13 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const data: Record<string, unknown> = { ...dto };
+    if (dto.profileImage === '') {
+      data.profileImage = null;
+    }
     return this.prisma.user.update({
       where: { id: userId },
-      data: dto,
+      data,
       select: USER_SELECT,
     });
   }
@@ -76,10 +80,11 @@ export class UsersService {
     return user;
   }
 
-  async getUsers(query: QueryUsersDto) {
+  async getUsers(query: QueryUsersDto, tenantId?: string) {
     const { page = 1, limit = 20, search, department, admissionYear } = query;
     const where: Prisma.UserWhereInput = {
       status: 'ACTIVE',
+      ...(tenantId && { tenantId }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
@@ -110,10 +115,10 @@ export class UsersService {
     };
   }
 
-  async getPendingUsers() {
+  async getPendingUsers(tenantId?: string) {
     return {
       data: await this.prisma.user.findMany({
-        where: { status: 'PENDING' },
+        where: { status: 'PENDING', ...(tenantId && { tenantId }) },
         select: USER_SELECT,
         orderBy: { createdAt: 'asc' },
       }),

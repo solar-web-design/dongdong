@@ -18,7 +18,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: process.env.COOKIE_SECURE === 'true',
   sameSite: 'lax' as const,
   path: '/',
 };
@@ -29,8 +29,8 @@ export class AuthController {
 
   @Post('register')
   @Throttle({ short: { limit: 3, ttl: 900000 } })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(@Body() dto: RegisterDto, @Req() req: express.Request) {
+    return this.authService.register(dto, req.tenantId);
   }
 
   @Post('login')
@@ -60,8 +60,8 @@ export class AuthController {
   @Post('oauth/kakao')
   @Throttle({ short: { limit: 5, ttl: 900000 } })
   @HttpCode(HttpStatus.OK)
-  async oauthKakao(@Body('code') code: string, @Res({ passthrough: true }) res: express.Response) {
-    const result = await this.authService.oauthKakao(code);
+  async oauthKakao(@Body('code') code: string, @Req() req: express.Request, @Res({ passthrough: true }) res: express.Response) {
+    const result = await this.authService.oauthKakao(code, req.tenantId);
     res.cookie('accessToken', result.accessToken, { ...COOKIE_OPTIONS, maxAge: 30 * 60 * 1000 });
     res.cookie('refreshToken', result.refreshToken, { ...COOKIE_OPTIONS, maxAge: 7 * 24 * 60 * 60 * 1000 });
     return { user: result.user, isNewUser: result.isNewUser };
@@ -70,8 +70,8 @@ export class AuthController {
   @Post('oauth/google')
   @Throttle({ short: { limit: 5, ttl: 900000 } })
   @HttpCode(HttpStatus.OK)
-  async oauthGoogle(@Body('code') code: string, @Res({ passthrough: true }) res: express.Response) {
-    const result = await this.authService.oauthGoogle(code);
+  async oauthGoogle(@Body('code') code: string, @Req() req: express.Request, @Res({ passthrough: true }) res: express.Response) {
+    const result = await this.authService.oauthGoogle(code, req.tenantId);
     res.cookie('accessToken', result.accessToken, { ...COOKIE_OPTIONS, maxAge: 30 * 60 * 1000 });
     res.cookie('refreshToken', result.refreshToken, { ...COOKIE_OPTIONS, maxAge: 7 * 24 * 60 * 60 * 1000 });
     return { user: result.user, isNewUser: result.isNewUser };

@@ -4,10 +4,18 @@
 전체 작업을 조율하고 각 Agent에게 태스크를 배분한다.
 
 ## 프로젝트 개요
-- 서비스명: 대학 동문 네트워크 플랫폼
+- 서비스명: 대학 동문 네트워크 플랫폼 (동동)
 - 대상: 대학 졸업 동문
+- 아키텍처: **멀티테넌트 SaaS** (대학별 서브도메인 분리)
 - 디자인: 화이트/블랙 모던, 모바일 최적화
 - 스택: Next.js 14 + NestJS + PostgreSQL + Socket.io
+
+## 멀티테넌트 구조
+- 단일 코드베이스, Row-Level 테넌트 격리 (tenantId FK)
+- 서브도메인 기반 테넌트 식별 (예: hanyang.dongdong.kr)
+- TenantMiddleware → req.tenantId / req.tenantSlug 주입
+- SuperAdmin (isSuperAdmin 플래그) → 플랫폼 전체 관리
+- 테넌트별 폐쇄적 운영 (가입 승인제)
 
 ## Agent 폴더 구조
 ```
@@ -27,6 +35,31 @@ dongdong/
 - api-spec.md   → API 명세 (planner 작성, frontend/backend 참조)
 - screens.md    → 화면 설계 (planner 작성, frontend 참조)
 - .env.example  → 환경변수 목록 (devops 작성)
+
+## NAS 배포 정보
+- **서버**: T8Plus 자작 NAS (Ubuntu Server 24.04 LTS)
+- **내부 IP**: `192.168.0.32`
+- **SSH**: `ssh seoseokkyun@192.168.0.32` (포트 22, SSH 키 인증, 비밀번호 불필요)
+- **프로젝트 경로**: `/home/seoseokkyun/dongdong/`
+- **환경변수 파일**: `.env.production` (docker-compose 실행 시 `--env-file .env.production`)
+- **Docker Compose**: `sudo docker compose --env-file .env.production up -d`
+- **컨테이너**: postgres(5432), backend(3001), frontend(3000), nginx(80)
+- **배포 명령어 예시**:
+  ```bash
+  # 파일 업로드
+  scp <로컬파일> seoseokkyun@192.168.0.32:/home/seoseokkyun/dongdong/<경로>
+  # 빌드 & 재시작
+  ssh seoseokkyun@192.168.0.32 "cd /home/seoseokkyun/dongdong && sudo docker compose --env-file .env.production build <서비스> && sudo docker compose --env-file .env.production up -d <서비스>"
+  # DB 직접 접근
+  ssh seoseokkyun@192.168.0.32 "sudo docker exec dongdong-postgres-1 psql -U dongdong -d dongdong -c '<SQL>'"
+  ```
+
+## 도메인 & Cloudflare Tunnel
+- **공식 도메인**: `aidongdong.co.kr`
+- **Cloudflare Tunnel** (NAS에서 2개 독립 운영):
+  - `dongdong` 터널 → `aidongdong.co.kr`, `*.aidongdong.co.kr` (systemd: `cloudflared-dongdong`)
+  - `nas-tunnel` 터널 → `stockmindai.co.kr`, `www.stockmindai.co.kr`, `aisolar.co.kr`, `www.aisolar.co.kr` (systemd: `cloudflared`)
+- **SSL**: Cloudflare 자동 (Flexible 모드)
 
 ## 개발 순서 및 진행 상태
 
@@ -74,9 +107,26 @@ dongdong/
 - [x] 관리자 신고 목록 조회 및 처리 (삭제/반려)
 - [x] 댓글 신고 (게시글 상세 페이지 내 Flag 버튼)
 
+### Phase 7: 멀티테넌트 SaaS ✅ 완료
+- [x] Tenant 모델 및 DB 마이그레이션 (tenants 테이블, 각 모델에 tenantId FK)
+- [x] TenantMiddleware (서브도메인/헤더 기반 테넌트 식별)
+- [x] SuperAdmin 가드 및 Tenant CRUD API (`/api/v1/tenants`)
+- [x] 기존 서비스 tenantId 필터링 (posts, users, announcements, meetings, finance, notifications)
+- [x] 프론트엔드 TenantProvider, useTenant 훅
+- [x] SuperAdmin 대시보드 (`/super-admin`)
+- [x] NAS 배포 완료
+
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인
 - 동문 프로필 (LinkedIn 스타일)
 - 모임 관리 / 회비 회계
 - 그룹 채팅 / DM
 - 권한 관리 (회장/부회장/총무/일반)
+- 멀티테넌트 (대학별 서브도메인 분리)
+- SuperAdmin 플랫폼 관리
+
+## 주요 기술 패턴
+- 컨트롤러에서 express import: `import * as express from 'express'` (isolatedModules 호환)
+- 요청 타입: `req: express.Request` → `req.tenantId` 접근
+- Prisma where 절 타입: `const where: Prisma.XxxWhereInput = { ... }`
+- 글로벌 prefix `api/v1`이 있으므로 컨트롤러 경로에 중복 금지

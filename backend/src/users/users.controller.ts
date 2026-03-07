@@ -7,7 +7,9 @@ import {
   Body,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
+import * as express from 'express';
 import { Role } from '@prisma/client';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -46,8 +48,8 @@ export class UsersController {
 
   @Get('pending')
   @Roles(Role.PRESIDENT)
-  getPendingUsers() {
-    return this.usersService.getPendingUsers();
+  getPendingUsers(@Req() req: express.Request) {
+    return this.usersService.getPendingUsers(req.tenantId);
   }
 
   @Get(':id')
@@ -56,8 +58,8 @@ export class UsersController {
   }
 
   @Get()
-  getUsers(@Query() query: QueryUsersDto) {
-    return this.usersService.getUsers(query);
+  getUsers(@Query() query: QueryUsersDto, @Req() req: express.Request) {
+    return this.usersService.getUsers(query, req.tenantId);
   }
 
   @Patch(':id/approve')

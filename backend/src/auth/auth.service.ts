@@ -32,7 +32,7 @@ export class AuthService {
     return secret;
   }
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, tenantId?: string) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -56,6 +56,7 @@ export class AuthService {
         company: dto.company,
         position: dto.position,
         location: dto.location,
+        ...(tenantId && { tenantId }),
       },
     });
 
@@ -147,7 +148,7 @@ export class AuthService {
     return { message: '로그아웃 되었습니다' };
   }
 
-  async oauthKakao(code: string) {
+  async oauthKakao(code: string, tenantId?: string) {
     const tokenRes = await fetch('https://kauth.kakao.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -173,10 +174,10 @@ export class AuthService {
     const name = profile.kakao_account?.profile?.nickname || '카카오 사용자';
     const profileImage = profile.kakao_account?.profile?.profile_image_url;
 
-    return this.handleOAuthLogin({ kakaoId, email, name, profileImage });
+    return this.handleOAuthLogin({ kakaoId, email, name, profileImage, tenantId });
   }
 
-  async oauthGoogle(code: string) {
+  async oauthGoogle(code: string, tenantId?: string) {
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -202,6 +203,7 @@ export class AuthService {
       email: profile.email,
       name: profile.name || '구글 사용자',
       profileImage: profile.picture,
+      tenantId,
     });
   }
 
@@ -211,6 +213,7 @@ export class AuthService {
     email?: string;
     name: string;
     profileImage?: string;
+    tenantId?: string;
   }) {
     const where = data.kakaoId
       ? { kakaoId: data.kakaoId }
@@ -238,6 +241,7 @@ export class AuthService {
           profileImage: data.profileImage,
           university: '',
           ...(data.kakaoId ? { kakaoId: data.kakaoId } : { googleId: data.googleId }),
+          ...(data.tenantId && { tenantId: data.tenantId }),
         },
       });
     }

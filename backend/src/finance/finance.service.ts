@@ -12,19 +12,24 @@ export class FinanceService {
 
   // ---- Fee Schedules ----
 
-  async getFeeSchedules() {
+  async getFeeSchedules(tenantId?: string) {
+    const where: Prisma.FeeScheduleWhereInput = {
+      ...(tenantId && { tenantId }),
+    };
     return {
       data: await this.prisma.feeSchedule.findMany({
+        where,
         orderBy: { dueDate: 'desc' },
       }),
     };
   }
 
-  async createFeeSchedule(dto: CreateFeeScheduleDto) {
+  async createFeeSchedule(dto: CreateFeeScheduleDto, tenantId?: string) {
     return this.prisma.feeSchedule.create({
       data: {
         ...dto,
         dueDate: new Date(dto.dueDate),
+        ...(tenantId && { tenantId }),
       },
     });
   }
@@ -88,7 +93,7 @@ export class FinanceService {
 
   // ---- Account Book ----
 
-  async getAccountBooks(query: QueryAccountBookDto) {
+  async getAccountBooks(query: QueryAccountBookDto, tenantId?: string) {
     const { page = 1, limit = 20, type, startDate, endDate } = query;
     const where: Prisma.AccountBookWhereInput = {
       ...(type && { type }),
@@ -99,6 +104,7 @@ export class FinanceService {
             lte: new Date(endDate),
           },
         }),
+      ...(tenantId && { tenantId }),
     };
 
     const [data, total, incomeAgg, expenseAgg] = await Promise.all([
@@ -132,11 +138,12 @@ export class FinanceService {
     };
   }
 
-  async createAccountBook(dto: CreateAccountBookDto) {
+  async createAccountBook(dto: CreateAccountBookDto, tenantId?: string) {
     return this.prisma.accountBook.create({
       data: {
         ...dto,
         date: new Date(dto.date),
+        ...(tenantId && { tenantId }),
       },
     });
   }

@@ -7,11 +7,12 @@ import { QueryNotificationsDto } from './dto/query-notifications.dto';
 export class NotificationsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(userId: string, query: QueryNotificationsDto) {
+  async findAll(userId: string, query: QueryNotificationsDto, tenantId?: string) {
     const { page = 1, limit = 20, unreadOnly } = query;
     const where: Prisma.NotificationWhereInput = {
       userId,
       ...(unreadOnly && { isRead: false }),
+      ...(tenantId && { tenantId }),
     };
 
     const [data, unreadCount] = await Promise.all([
@@ -56,9 +57,10 @@ export class NotificationsService {
     title: string,
     message: string,
     link?: string,
+    tenantId?: string,
   ) {
     return this.prisma.notification.create({
-      data: { userId, type, title, message, link },
+      data: { userId, type, title, message, link, ...(tenantId && { tenantId }) },
     });
   }
 }

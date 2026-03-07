@@ -14,10 +14,11 @@ import { RsvpDto } from './dto/rsvp.dto';
 export class MeetingsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(query: QueryMeetingDto) {
+  async findAll(query: QueryMeetingDto, tenantId?: string) {
     const { page = 1, limit = 20, status } = query;
     const where: Prisma.MeetingWhereInput = {
       ...(status && { status }),
+      ...(tenantId && { tenantId }),
     };
 
     const [data, total] = await Promise.all([
@@ -63,11 +64,12 @@ export class MeetingsService {
     return meeting;
   }
 
-  async create(dto: CreateMeetingDto) {
+  async create(dto: CreateMeetingDto, tenantId?: string) {
     return this.prisma.meeting.create({
       data: {
         ...dto,
         date: new Date(dto.date),
+        ...(tenantId && { tenantId }),
       },
     });
   }

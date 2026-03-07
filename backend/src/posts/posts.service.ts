@@ -5,24 +5,48 @@ import {
 } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostsDto } from './dto/query-posts.dto';
 
 @Injectable()
 export class PostsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
-  async create(authorId: string, dto: CreatePostDto) {
-    return this.prisma.post.create({
-      data: { ...dto, authorId },
+  async create(authorId: string, dto: CreatePostDto, tenantId?: string) {
+    const post = await this.prisma.post.create({
+      data: { ...dto, authorId, ...(tenantId && { tenantId }) },
       include: { author: { select: { id: true, name: true, profileImage: true } } },
     });
+
+    // 같은 테넌트의 활성 회원들에게 알림 생성
+    const members = await this.prisma.user.findMany({
+      where: { status: 'ACTIVE', id: { not: authorId }, ...(tenantId && { tenantId }) },
+      select: { id: true },
+    });
+
+    const notificationPromises = members.map((m) =>
+      this.notifications.create(
+        m.id,
+        'POST',
+        '새 게시글',
+        `${post.author.name}님이 "${post.title}" 글을 올렸습니다`,
+        `/posts/${post.id}`,
+      ),
+    );
+    Promise.all(notificationPromises).catch(() => {});
+
+    return post;
   }
 
-  async findAll(query: QueryPostsDto) {
+  async findAll(query: QueryPostsDto, tenantId?: string) {
     const { page = 1, limit = 20, category, search } = query;
     const where: Prisma.PostWhereInput = {
+      ...(tenantId && { tenantId }),
       ...(category && { category }),
       ...(search && {
         OR: [

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { useTheme } from '@/hooks/useTheme';
 import { api } from '@/lib/api';
+import TenantProvider from '@/components/TenantProvider';
 import type { User } from '@/types';
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
@@ -54,7 +55,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {mounted ? (
         <ThemeInitializer>
-          <AuthInitializer>{children}</AuthInitializer>
+          <TenantProvider>
+            <AuthInitializer>{children}</AuthInitializer>
+          </TenantProvider>
         </ThemeInitializer>
       ) : (
         children

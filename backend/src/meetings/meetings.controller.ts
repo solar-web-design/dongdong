@@ -7,8 +7,10 @@ import {
   Param,
   Body,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import * as express from 'express';
 import { Role } from '@prisma/client';
 import { MeetingsService } from './meetings.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
@@ -25,8 +27,8 @@ export class MeetingsController {
   constructor(private meetingsService: MeetingsService) {}
 
   @Get()
-  findAll(@Query() query: QueryMeetingDto) {
-    return this.meetingsService.findAll(query);
+  findAll(@Query() query: QueryMeetingDto, @Req() req: express.Request) {
+    return this.meetingsService.findAll(query, req.tenantId);
   }
 
   @Get(':id')
@@ -36,8 +38,8 @@ export class MeetingsController {
 
   @Post()
   @Roles(Role.PRESIDENT, Role.VICE_PRESIDENT, Role.TREASURER)
-  create(@Body() dto: CreateMeetingDto) {
-    return this.meetingsService.create(dto);
+  create(@Body() dto: CreateMeetingDto, @Req() req: express.Request) {
+    return this.meetingsService.create(dto, req.tenantId);
   }
 
   @Patch(':id')
