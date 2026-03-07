@@ -32,7 +32,7 @@ export default function LoginPage() {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      login(data.user, data.accessToken, data.refreshToken);
+      login(data.user);
       router.push('/feed');
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');

@@ -24,7 +24,7 @@ function GoogleCallbackContent() {
       body: JSON.stringify({ code }),
     })
       .then((data) => {
-        login(data.user, data.accessToken, data.refreshToken);
+        login(data.user);
         router.replace(data.isNewUser ? '/settings' : '/feed');
       })
       .catch(() => {

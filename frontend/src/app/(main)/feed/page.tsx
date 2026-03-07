@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
-import { Plus, Heart, MessageCircle, Pin } from 'lucide-react';
+import { Plus, Heart, MessageCircle, Pin, Search, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cn, formatRelativeTime, getCategoryLabel } from '@/lib/utils';
 import Avatar from '@/components/Avatar';
@@ -23,17 +23,47 @@ const categories = [
 export default function FeedPage() {
   const [category, setCategory] = useState('');
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['posts', category, page],
+    queryKey: ['posts', category, page, search],
     queryFn: () =>
       api<PaginatedResponse<Post>>('/posts', {
-        params: { page, limit: 20, category: category || undefined },
+        params: { page, limit: 20, category: category || undefined, search: search || undefined },
       }),
   });
 
+  const handleSearch = () => {
+    setSearch(searchInput);
+    setPage(1);
+  };
+
+  const clearSearch = () => {
+    setSearchInput('');
+    setSearch('');
+    setPage(1);
+  };
+
   return (
     <div className="px-4">
+      {/* Search */}
+      <div className="relative mt-4">
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          placeholder="게시글 검색..."
+          className="input-field w-full pl-10 pr-10"
+        />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        {searchInput && (
+          <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
       {/* Category Tabs */}
       <div className="flex gap-2 py-4 overflow-x-auto scrollbar-hide">
         {categories.map((cat) => (

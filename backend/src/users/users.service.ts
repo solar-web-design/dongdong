@@ -2,8 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
@@ -148,6 +151,54 @@ export class UsersService {
       data: { role: dto.role },
       select: USER_SELECT,
     });
+  }
+
+  async withdrawUser(userId: string, password?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true, status: true },
+    });
+    if (!user) throw new NotFoundException('회원을 찾을 수 없습니다');
+
+    if (user.status === 'WITHDRAWN') {
+      throw new ForbiddenException('이미 탈퇴한 계정입니다');
+    }
+
+    // 비밀번호가 설정된 사용자는 비밀번호 검증 필수
+    if (user.password) {
+      if (!password) {
+        throw new UnauthorizedException('비밀번호를 입력해주세요');
+      }
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('비밀번호가 올바르지 않습니다');
+      }
+    }
+
+    // 개인정보 파기 처리
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: `withdrawn_${randomUUID()}@deleted.local`,
+        name: '탈퇴한 사용자',
+        phone: null,
+        profileImage: null,
+        department: null,
+        studentId: null,
+        bio: null,
+        company: null,
+        position: null,
+        location: null,
+        website: null,
+        kakaoId: null,
+        googleId: null,
+        password: null,
+        refreshToken: null,
+        status: 'WITHDRAWN',
+      },
+    });
+
+    return { message: '탈퇴가 완료되었습니다' };
   }
 
   async removeUser(id: string) {

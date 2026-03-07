@@ -14,7 +14,7 @@ import { ChatService } from './chat.service';
 
 @WebSocketGateway({
   namespace: '/chat',
-  cors: { origin: '*' },
+  cors: { origin: process.env.CORS_ORIGIN || 'http://localhost:3000' },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()

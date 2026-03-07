@@ -45,4 +45,20 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   studentId?: string;
+
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @IsOptional()
+  @IsString()
+  position?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
 }

@@ -56,8 +56,6 @@ describe('LoginPage', () => {
   it('submits form and calls login on success', async () => {
     mockApi.mockResolvedValueOnce({
       user: { id: '1', name: '테스트' },
-      accessToken: 'token',
-      refreshToken: 'refresh',
     });
 
     render(<LoginPage />);
@@ -68,8 +66,6 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith(
         { id: '1', name: '테스트' },
-        'token',
-        'refresh'
       );
       expect(mockPush).toHaveBeenCalledWith('/feed');
     });

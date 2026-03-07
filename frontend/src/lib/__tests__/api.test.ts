@@ -24,25 +24,7 @@ describe('api', () => {
         headers: expect.objectContaining({
           'Content-Type': 'application/json',
         }),
-      })
-    );
-  });
-
-  it('includes auth token when present', async () => {
-    localStorage.setItem('accessToken', 'test-token');
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({}),
-    });
-
-    await api('/users');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: 'Bearer test-token',
-        }),
+        credentials: 'include',
       })
     );
   });
@@ -83,16 +65,13 @@ describe('api', () => {
     await expect(api('/users')).rejects.toThrow('Bad request');
   });
 
-  it('refreshes token on 401', async () => {
-    localStorage.setItem('accessToken', 'old-token');
-    localStorage.setItem('refreshToken', 'refresh-token');
-
+  it('refreshes token on 401 via cookie', async () => {
     mockFetch
       .mockResolvedValueOnce({ ok: false, status: 401 })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ accessToken: 'new-token', refreshToken: 'new-refresh' }),
+        json: () => Promise.resolve({}),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -102,7 +81,10 @@ describe('api', () => {
 
     const result = await api('/users');
     expect(result).toEqual({ data: 'refreshed' });
-    expect(localStorage.getItem('accessToken')).toBe('new-token');
+    // Refresh call should use credentials: include
+    expect(mockFetch.mock.calls[1][1]).toEqual(
+      expect.objectContaining({ credentials: 'include' })
+    );
   });
 
   it('handles failed JSON parse on error response', async () => {
@@ -117,7 +99,7 @@ describe('api', () => {
 });
 
 describe('apiUpload', () => {
-  it('sends FormData without Content-Type header', async () => {
+  it('sends FormData with credentials include', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -129,22 +111,9 @@ describe('apiUpload', () => {
 
     const result = await apiUpload('/upload', formData);
     expect(result).toEqual({ url: 'https://example.com/image.jpg' });
-
-    const headers = mockFetch.mock.calls[0][1].headers;
-    expect(headers['Content-Type']).toBeUndefined();
-  });
-
-  it('includes auth token', async () => {
-    localStorage.setItem('accessToken', 'my-token');
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({}),
-    });
-
-    await apiUpload('/upload', new FormData());
-    const headers = mockFetch.mock.calls[0][1].headers;
-    expect(headers.Authorization).toBe('Bearer my-token');
+    expect(mockFetch.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ credentials: 'include' })
+    );
   });
 
   it('throws on upload failure', async () => {

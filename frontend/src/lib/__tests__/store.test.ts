@@ -41,24 +41,20 @@ describe('useAuthStore', () => {
     expect(localStorage.getItem('user')).toBeNull();
   });
 
-  it('login stores tokens and user', () => {
-    useAuthStore.getState().login(mockUser, 'access-123', 'refresh-456');
+  it('login stores user info', () => {
+    useAuthStore.getState().login(mockUser);
     const state = useAuthStore.getState();
     expect(state.user).toEqual(mockUser);
     expect(state.isAuthenticated).toBe(true);
-    expect(localStorage.getItem('accessToken')).toBe('access-123');
-    expect(localStorage.getItem('refreshToken')).toBe('refresh-456');
     expect(localStorage.getItem('user')).toBe(JSON.stringify(mockUser));
   });
 
   it('logout clears everything', () => {
-    useAuthStore.getState().login(mockUser, 'access', 'refresh');
+    useAuthStore.getState().login(mockUser);
     useAuthStore.getState().logout();
     const state = useAuthStore.getState();
     expect(state.user).toBeNull();
     expect(state.isAuthenticated).toBe(false);
-    expect(localStorage.getItem('accessToken')).toBeNull();
-    expect(localStorage.getItem('refreshToken')).toBeNull();
     expect(localStorage.getItem('user')).toBeNull();
   });
 });

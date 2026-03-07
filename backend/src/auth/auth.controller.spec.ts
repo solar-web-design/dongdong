@@ -2,6 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
+const mockResponse = () => {
+  const res: any = {};
+  res.cookie = jest.fn().mockReturnValue(res);
+  res.clearCookie = jest.fn().mockReturnValue(res);
+  return res;
+};
+
+const mockRequest = (cookies: Record<string, string> = {}, body: any = {}) => {
+  return { cookies, body } as any;
+};
+
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: AuthService;
@@ -48,47 +59,53 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('should call authService.login with dto', async () => {
+    it('should set cookies and return user', async () => {
       const dto = { email: 'test@example.com', password: 'password123' };
-      const expected = {
+      const loginResult = {
         accessToken: 'token',
         refreshToken: 'refresh',
         user: { id: 'user-1' },
       };
-      mockAuthService.login.mockResolvedValue(expected);
+      mockAuthService.login.mockResolvedValue(loginResult);
+      const res = mockResponse();
 
-      const result = await controller.login(dto);
+      const result = await controller.login(dto, res);
 
-      expect(result).toEqual(expected);
+      expect(result).toEqual({ user: { id: 'user-1' } });
+      expect(res.cookie).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('refresh', () => {
-    it('should call authService.refresh with refreshToken', async () => {
-      const dto = { refreshToken: 'valid-refresh' };
+    it('should refresh tokens from cookie', async () => {
       const expected = {
         accessToken: 'new-access',
         refreshToken: 'new-refresh',
       };
       mockAuthService.refresh.mockResolvedValue(expected);
+      const req = mockRequest({ refreshToken: 'valid-refresh' });
+      const res = mockResponse();
 
-      const result = await controller.refresh(dto);
+      const result = await controller.refresh(req, res);
 
-      expect(result).toEqual(expected);
+      expect(result).toEqual({ message: '토큰이 갱신되었습니다' });
       expect(authService.refresh).toHaveBeenCalledWith('valid-refresh');
+      expect(res.cookie).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('logout', () => {
-    it('should call authService.logout with userId', async () => {
+    it('should clear cookies and call authService.logout', async () => {
       mockAuthService.logout.mockResolvedValue({
         message: '로그아웃 되었습니다',
       });
+      const res = mockResponse();
 
-      const result = await controller.logout('user-1');
+      const result = await controller.logout('user-1', res);
 
       expect(result.message).toBe('로그아웃 되었습니다');
       expect(authService.logout).toHaveBeenCalledWith('user-1');
+      expect(res.clearCookie).toHaveBeenCalledTimes(2);
     });
   });
 });

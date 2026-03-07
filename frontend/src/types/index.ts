@@ -187,7 +187,5 @@ export interface CursorResponse<T> {
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
   user: User;
 }

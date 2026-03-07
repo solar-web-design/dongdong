@@ -52,6 +52,10 @@ export class AuthService {
         admissionYear: dto.admissionYear,
         graduationYear: dto.graduationYear,
         studentId: dto.studentId,
+        bio: dto.bio,
+        company: dto.company,
+        position: dto.position,
+        location: dto.location,
       },
     });
 

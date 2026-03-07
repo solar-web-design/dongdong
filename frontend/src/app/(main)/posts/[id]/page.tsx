@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
-import { ArrowLeft, Heart, MoreVertical, Send } from 'lucide-react';
+import { ArrowLeft, Heart, MoreVertical, Send, Pencil, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatRelativeTime, getCategoryLabel } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
@@ -19,11 +19,37 @@ export default function PostDetailPage() {
   const { user } = useAuthStore();
   const [comment, setComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ['post', id],
     queryFn: () => api<Post>(`/posts/${id}`),
   });
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api(`/posts/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      router.push('/feed');
+    },
+  });
+
+  const handleDelete = () => {
+    if (confirm('게시글을 삭제하시겠습니까?')) {
+      deleteMutation.mutate();
+    }
+  };
 
   const likeMutation = useMutation({
     mutationFn: () => api(`/posts/${id}/like`, { method: 'POST' }),
@@ -59,9 +85,30 @@ export default function PostDetailPage() {
           <ArrowLeft size={20} />
         </button>
         {user?.id === post.authorId && (
-          <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-            <MoreVertical size={20} />
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+            >
+              <MoreVertical size={20} />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+                <button
+                  onClick={() => { setShowMenu(false); router.push(`/posts/${id}/edit`); }}
+                  className="flex items-center gap-2 w-full px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <Pencil size={14} /> 수정
+                </button>
+                <button
+                  onClick={() => { setShowMenu(false); handleDelete(); }}
+                  className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <Trash2 size={14} /> 삭제
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

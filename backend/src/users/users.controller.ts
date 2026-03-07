@@ -13,6 +13,7 @@ import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -25,6 +26,14 @@ export class UsersController {
   @Get('me')
   getMe(@CurrentUser('id') userId: string) {
     return this.usersService.getMe(userId);
+  }
+
+  @Delete('me')
+  withdrawMe(
+    @CurrentUser('id') userId: string,
+    @Body() dto: WithdrawDto,
+  ) {
+    return this.usersService.withdrawUser(userId, dto.password);
   }
 
   @Patch('me')
