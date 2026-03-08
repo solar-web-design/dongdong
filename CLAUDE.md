@@ -8,7 +8,7 @@
 - 대상: 대학 졸업 동문
 - 아키텍처: **멀티테넌트 SaaS** (대학별 서브도메인 분리)
 - 디자인: 화이트/블랙 모던, 모바일 최적화
-- 스택: Next.js 14 + NestJS + PostgreSQL + Socket.io
+- 스택: Next.js 14 + NestJS + PostgreSQL + Socket.io + Capacitor (네이티브 앱)
 
 ## 멀티테넌트 구조
 - 단일 코드베이스, Row-Level 테넌트 격리 (tenantId FK)
@@ -122,6 +122,59 @@ dongdong/
 - [x] 피드 페이지에 공지사항 섹션 추가 (최근 3개)
 - [x] 알림 개별/전체 삭제 기능 (백엔드 DELETE + 프론트 X 버튼, 전체 삭제)
 
+### Phase 9: 네이티브 앱 (Capacitor) 🔲 진행 예정
+> **전략**: Capacitor를 사용하여 기존 Next.js 웹앱을 iOS/Android 네이티브 앱으로 래핑
+> **장점**: 코드베이스 재사용 극대화, 웹과 네이티브 동시 배포, 네이티브 API 접근 가능
+
+#### 9-1. Capacitor 초기 설정
+- [ ] `@capacitor/core`, `@capacitor/cli` 설치 (frontend/)
+- [ ] `npx cap init` → `capacitor.config.ts` 생성
+- [ ] `webDir`을 Next.js 빌드 출력(`out/`)으로 설정
+- [ ] Next.js `output: 'export'` 정적 빌드 설정 추가 (네이티브용 빌드 스크립트)
+- [ ] `.gitignore`에 `ios/`, `android/` 네이티브 프로젝트 폴더 추가
+
+#### 9-2. 플랫폼 추가 및 네이티브 프로젝트 생성
+- [ ] `npx cap add ios` → Xcode 프로젝트 생성
+- [ ] `npx cap add android` → Android Studio 프로젝트 생성
+- [ ] 앱 아이콘 및 스플래시 스크린 리소스 생성 (`@capacitor/assets`)
+- [ ] `Info.plist` / `AndroidManifest.xml` 기본 설정 (앱 이름, 번들 ID)
+- [ ] 번들 ID 규칙: `kr.aidongdong.app` (iOS/Android 공통)
+
+#### 9-3. 네이티브 플러그인 연동
+- [ ] **푸시 알림**: `@capacitor/push-notifications` + FCM(Android) / APNs(iOS)
+- [ ] **카메라/갤러리**: `@capacitor/camera` (프로필 사진, 게시글 이미지 업로드)
+- [ ] **로컬 저장소**: `@capacitor/preferences` (토큰 저장, 자동 로그인)
+- [ ] **상태바/네비게이션바**: `@capacitor/status-bar` (네이티브 UI 통합)
+- [ ] **딥링크**: `@capacitor/app` (aidongdong.co.kr 딥링크 → 앱 전환)
+- [ ] **공유**: `@capacitor/share` (게시글/모임 공유)
+- [ ] **네트워크 상태**: `@capacitor/network` (오프라인 감지 및 안내)
+
+#### 9-4. 인증 및 네트워크 어댑터
+- [ ] 네이티브 환경 감지 유틸 (`Capacitor.isNativePlatform()`)
+- [ ] API Base URL 분기: 웹(상대경로) vs 네이티브(`https://aidongdong.co.kr`)
+- [ ] OAuth 소셜 로그인 네이티브 대응 (커스텀 URL 스킴 or In-App Browser)
+- [ ] 토큰 저장소 분기: 웹(cookie/localStorage) vs 네이티브(Preferences/Keychain)
+- [ ] WebSocket(Socket.io) 네이티브 환경 연결 테스트
+
+#### 9-5. 푸시 알림 백엔드 연동
+- [ ] FCM 프로젝트 생성 및 서비스 키 발급
+- [ ] User 모델에 `deviceToken`, `platform` 필드 추가 (Prisma 마이그레이션)
+- [ ] 디바이스 토큰 등록 API (`POST /api/v1/users/device-token`)
+- [ ] 백엔드 NotificationService에 FCM/APNs 발송 로직 추가
+- [ ] 알림 트리거: 새 댓글, DM, 모임 초대, 가입 승인 시 푸시 발송
+
+#### 9-6. 앱 스토어 배포 준비
+- [ ] iOS: Apple Developer 계정, 인증서/프로비저닝 프로파일
+- [ ] Android: Google Play Console, 서명 키 생성
+- [ ] 앱 메타데이터 (스크린샷, 설명, 개인정보 처리방침 URL)
+- [ ] iOS TestFlight / Android 내부 테스트 트랙 배포
+- [ ] 앱 심사 제출 및 출시
+
+#### 9-7. 네이티브 빌드 파이프라인
+- [ ] 빌드 스크립트: `npm run build:native` → `next build && next export && npx cap sync`
+- [ ] 환경별 Capacitor 설정 (`capacitor.config.ts`에서 서버 URL 분기)
+- [ ] CI/CD 연동 (선택): GitHub Actions → Fastlane 자동 빌드/배포
+
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인
 - 동문 프로필 (LinkedIn 스타일)
@@ -130,9 +183,13 @@ dongdong/
 - 권한 관리 (회장/부회장/총무/일반)
 - 멀티테넌트 (대학별 서브도메인 분리)
 - SuperAdmin 플랫폼 관리
+- 네이티브 앱 (iOS/Android) — Capacitor 기반, 푸시 알림, 딥링크
 
 ## 주요 기술 패턴
 - 컨트롤러에서 express import: `import * as express from 'express'` (isolatedModules 호환)
 - 요청 타입: `req: express.Request` → `req.tenantId` 접근
 - Prisma where 절 타입: `const where: Prisma.XxxWhereInput = { ... }`
 - 글로벌 prefix `api/v1`이 있으므로 컨트롤러 경로에 중복 금지
+- 네이티브 플랫폼 감지: `import { Capacitor } from '@capacitor/core'` → `Capacitor.isNativePlatform()`
+- 네이티브 빌드: `next build && next export` → `npx cap sync` → Xcode/Android Studio 빌드
+- API URL 분기: 네이티브에서는 절대 URL(`https://aidongdong.co.kr/api/v1/...`) 사용
