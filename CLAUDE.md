@@ -122,6 +122,20 @@ dongdong/
 - [x] 피드 페이지에 공지사항 섹션 추가 (최근 3개)
 - [x] 알림 개별/전체 삭제 기능 (백엔드 DELETE + 프론트 X 버튼, 전체 삭제)
 
+### Phase 9: 테넌트 격리 강화 및 SuperAdmin UX ✅ 완료
+- [x] 전 서비스 테넌트 격리 강화 (finance, posts, announcements, meetings, notifications, users, reports)
+  - requireTenant() 헬퍼로 생성 시 tenantId 필수 검증
+  - 목록 조회 시 tenantId 없으면 빈 배열 반환
+  - ID 기반 조회 시 tenantId 불일치 검증
+- [x] 크로스 서브도메인 쿠키 공유 (COOKIE_DOMAIN=.aidongdong.co.kr, COOKIE_SECURE=true)
+- [x] NEXT_PUBLIC_API_URL 상대경로로 변경 (/api/v1) — 서브도메인 Host 헤더 보존
+- [x] SuperAdmin 대시보드 모바일 카드 레이아웃 (테이블 → 카드)
+- [x] SuperAdmin 레이아웃에 네비게이션 탭 추가 (대시보드/개설 신청)
+- [x] SuperAdmin 상세 페이지 뒤로가기 버튼
+- [x] 동문회 개설 신청 기능 (tenant-request API + 프론트 페이지)
+- [x] 랜딩페이지 리디자인 + 공개 페이지 분리 ((public) route group)
+- [x] NAS 배포 완료
+
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인
 - 동문 프로필 (LinkedIn 스타일)
@@ -136,3 +150,7 @@ dongdong/
 - 요청 타입: `req: express.Request` → `req.tenantId` 접근
 - Prisma where 절 타입: `const where: Prisma.XxxWhereInput = { ... }`
 - 글로벌 prefix `api/v1`이 있으므로 컨트롤러 경로에 중복 금지
+- 테넌트 격리 패턴: 목록은 tenantId 없으면 빈 배열, 생성은 requireTenant()로 필수 검증, ID 조회는 tenantId 일치 확인
+- 쿠키: COOKIE_DOMAIN(`.aidongdong.co.kr`), COOKIE_SECURE, httpOnly, sameSite=lax
+- NEXT_PUBLIC_API_URL은 반드시 상대경로(`/api/v1`) — 절대경로 시 서브도메인 Host 헤더 유실
+- SuperAdmin 경로: `/super-admin` (기존 `/admin`은 테넌트 관리자용)
