@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { getRoleBadge } from '@/lib/utils';
+import { useAuthStore } from '@/lib/store';
 import Avatar from '@/components/Avatar';
 import Badge from '@/components/Badge';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -22,6 +23,7 @@ const ROLES: { value: Role; label: string }[] = [
 export default function AdminMembersPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user: me } = useAuthStore();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -33,6 +35,7 @@ export default function AdminMembersPage() {
     mutationFn: ({ id, role }: { id: string; role: Role }) =>
       api(`/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['allUsers'] }),
+    onError: (err: Error) => alert(err.message),
   });
 
   const deleteMutation = useMutation({
@@ -80,7 +83,7 @@ export default function AdminMembersPage() {
                     value={user.role}
                     onChange={(e) => roleMutation.mutate({ id: user.id, role: e.target.value as Role })}
                     className="input-field flex-1 text-sm py-2"
-                    disabled={roleMutation.isPending}
+                    disabled={roleMutation.isPending || user.id === me?.id}
                   >
                     {ROLES.map((r) => (
                       <option key={r.value} value={r.value}>{r.label}</option>

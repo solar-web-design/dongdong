@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ResolveReportDto } from './dto/resolve-report.dto';
@@ -7,7 +8,7 @@ import { ResolveReportDto } from './dto/resolve-report.dto';
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(reporterId: string, dto: CreateReportDto) {
+  async create(reporterId: string, dto: CreateReportDto, tenantId?: string) {
     // Check duplicate report
     const existing = await this.prisma.report.findFirst({
       where: {
@@ -21,10 +22,11 @@ export class ReportsService {
       throw new ConflictException('이미 신고한 콘텐츠입니다');
     }
 
-    // Verify target exists
+    // Verify target exists and belongs to same tenant
     if (dto.type === 'POST' && dto.postId) {
       const post = await this.prisma.post.findUnique({ where: { id: dto.postId } });
       if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다');
+      if (tenantId && post.tenantId !== tenantId) throw new ForbiddenException('접근 권한이 없습니다');
       if (post.authorId === reporterId) throw new ForbiddenException('자신의 게시글은 신고할 수 없습니다');
     }
     if (dto.type === 'COMMENT' && dto.commentId) {
@@ -41,12 +43,17 @@ export class ReportsService {
         reporterId,
         postId: dto.postId,
         commentId: dto.commentId,
+        ...(tenantId && { tenantId }),
       },
     });
   }
 
-  async findAll(status?: string) {
-    const where = status ? { status: status as any } : {};
+  async findAll(status?: string, tenantId?: string) {
+    if (!tenantId) return { data: [] };
+    const where: Prisma.ReportWhereInput = {
+      tenantId,
+      ...(status && { status: status as any }),
+    };
     const reports = await this.prisma.report.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -80,10 +87,15 @@ export class ReportsService {
     return { data: enriched };
   }
 
-  async resolve(id: string, resolvedById: string, dto: ResolveReportDto) {
+  async resolve(id: string, resolvedById: string, dto: ResolveReportDto, tenantId?: string) {
     const report = await this.prisma.report.findUnique({ where: { id } });
     if (!report) throw new NotFoundException('신고를 찾을 수 없습니다');
     if (report.status !== 'PENDING') throw new ForbiddenException('이미 처리된 신고입니다');
+
+    // Verify report belongs to this tenant
+    if (tenantId && report.tenantId !== tenantId) {
+      throw new ForbiddenException('접근 권한이 없습니다');
+    }
 
     const updated = await this.prisma.report.update({
       where: { id },
@@ -107,11 +119,12 @@ export class ReportsService {
     return updated;
   }
 
-  async getStats() {
+  async getStats(tenantId?: string) {
+    if (!tenantId) return { pending: 0, resolved: 0, dismissed: 0, total: 0 };
     const [pending, resolved, dismissed] = await Promise.all([
-      this.prisma.report.count({ where: { status: 'PENDING' } }),
-      this.prisma.report.count({ where: { status: 'RESOLVED' } }),
-      this.prisma.report.count({ where: { status: 'DISMISSED' } }),
+      this.prisma.report.count({ where: { status: 'PENDING', tenantId } }),
+      this.prisma.report.count({ where: { status: 'RESOLVED', tenantId } }),
+      this.prisma.report.count({ where: { status: 'DISMISSED', tenantId } }),
     ]);
     return { pending, resolved, dismissed, total: pending + resolved + dismissed };
   }

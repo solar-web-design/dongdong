@@ -79,8 +79,8 @@ export class UsersController {
 
   @Patch(':id/role')
   @Roles(Role.PRESIDENT)
-  changeRole(@Param('id') id: string, @Body() dto: ChangeRoleDto) {
-    return this.usersService.changeRole(id, dto);
+  changeRole(@Param('id') id: string, @Body() dto: ChangeRoleDto, @Req() req: express.Request) {
+    return this.usersService.changeRole(id, dto, req.user as any);
   }
 
   @Delete(':id')

@@ -22,6 +22,9 @@ const config: Config = {
       fontFamily: {
         sans: ['Pretendard', 'system-ui', 'sans-serif'],
       },
+      animation: {
+        'landing-float': 'landing-float 7s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

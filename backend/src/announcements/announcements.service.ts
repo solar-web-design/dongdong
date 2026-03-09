@@ -14,10 +14,9 @@ export class AnnouncementsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryAnnouncementDto, tenantId?: string) {
+    if (!tenantId) return { data: [], total: 0 };
     const { page = 1, limit = 20 } = query;
-    const where: Prisma.AnnouncementWhereInput = {
-      ...(tenantId && { tenantId }),
-    };
+    const where: Prisma.AnnouncementWhereInput = { tenantId };
     const [data, total] = await Promise.all([
       this.prisma.announcement.findMany({
         where,
@@ -34,8 +33,9 @@ export class AnnouncementsService {
   }
 
   async create(authorId: string, dto: CreateAnnouncementDto, tenantId?: string) {
+    if (!tenantId) throw new ForbiddenException('테넌트 컨텍스트가 필요합니다');
     return this.prisma.announcement.create({
-      data: { ...dto, authorId, ...(tenantId && { tenantId }) },
+      data: { ...dto, authorId, tenantId },
       include: {
         author: { select: { id: true, name: true, profileImage: true } },
       },
@@ -47,8 +47,9 @@ export class AnnouncementsService {
     userId: string,
     userRole: Role,
     dto: UpdateAnnouncementDto,
+    tenantId?: string,
   ) {
-    const announcement = await this.findOrThrow(id);
+    const announcement = await this.findOrThrow(id, tenantId);
     if (
       announcement.authorId !== userId &&
       !([Role.PRESIDENT, Role.VICE_PRESIDENT] as Role[]).includes(userRole)
@@ -64,8 +65,8 @@ export class AnnouncementsService {
     });
   }
 
-  async remove(id: string, userId: string, userRole: Role) {
-    const announcement = await this.findOrThrow(id);
+  async remove(id: string, userId: string, userRole: Role, tenantId?: string) {
+    const announcement = await this.findOrThrow(id, tenantId);
     if (
       announcement.authorId !== userId &&
       !([Role.PRESIDENT, Role.VICE_PRESIDENT] as Role[]).includes(userRole)
@@ -76,11 +77,14 @@ export class AnnouncementsService {
     return { message: '공지가 삭제되었습니다' };
   }
 
-  private async findOrThrow(id: string) {
+  private async findOrThrow(id: string, tenantId?: string) {
     const announcement = await this.prisma.announcement.findUnique({
       where: { id },
     });
     if (!announcement) throw new NotFoundException('공지를 찾을 수 없습니다');
+    if (tenantId && announcement.tenantId !== tenantId) {
+      throw new ForbiddenException('접근 권한이 없습니다');
+    }
     return announcement;
   }
 }

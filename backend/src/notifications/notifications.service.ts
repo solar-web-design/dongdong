@@ -12,7 +12,7 @@ export class NotificationsService {
     const where: Prisma.NotificationWhereInput = {
       userId,
       ...(unreadOnly && { isRead: false }),
-      ...(tenantId && { tenantId }),
+      ...(tenantId ? { tenantId } : { tenantId: null }),
     };
 
     const [data, unreadCount] = await Promise.all([
@@ -23,7 +23,7 @@ export class NotificationsService {
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.notification.count({
-        where: { userId, isRead: false },
+        where: { userId, isRead: false, ...(tenantId ? { tenantId } : { tenantId: null }) },
       }),
     ]);
 

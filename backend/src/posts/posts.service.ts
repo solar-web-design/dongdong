@@ -17,15 +17,21 @@ export class PostsService {
     private notifications: NotificationsService,
   ) {}
 
+  private requireTenant(tenantId?: string): string {
+    if (!tenantId) throw new ForbiddenException('테넌트 컨텍스트가 필요합니다');
+    return tenantId;
+  }
+
   async create(authorId: string, dto: CreatePostDto, tenantId?: string) {
+    const tid = this.requireTenant(tenantId);
     const post = await this.prisma.post.create({
-      data: { ...dto, authorId, ...(tenantId && { tenantId }) },
+      data: { ...dto, authorId, tenantId: tid },
       include: { author: { select: { id: true, name: true, profileImage: true } } },
     });
 
     // 같은 테넌트의 활성 회원들에게 알림 생성
     const members = await this.prisma.user.findMany({
-      where: { status: 'ACTIVE', id: { not: authorId }, ...(tenantId && { tenantId }) },
+      where: { status: 'ACTIVE', id: { not: authorId }, tenantId: tid },
       select: { id: true },
     });
 
@@ -36,6 +42,7 @@ export class PostsService {
         '새 게시글',
         `${post.author.name}님이 "${post.title}" 글을 올렸습니다`,
         `/posts/${post.id}`,
+        tid,
       ),
     );
     Promise.all(notificationPromises).catch(() => {});
@@ -44,9 +51,10 @@ export class PostsService {
   }
 
   async findAll(query: QueryPostsDto, tenantId?: string) {
+    if (!tenantId) return { data: [], total: 0, page: 1, totalPages: 0 };
     const { page = 1, limit = 20, category, search } = query;
     const where: Prisma.PostWhereInput = {
-      ...(tenantId && { tenantId }),
+      tenantId,
       ...(category && { category }),
       ...(search && {
         OR: [
@@ -73,7 +81,7 @@ export class PostsService {
     return { data, total, page, totalPages: Math.ceil(total / limit) };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, tenantId?: string) {
     const post = await this.prisma.post.findUnique({
       where: { id },
       include: {
@@ -95,6 +103,9 @@ export class PostsService {
       },
     });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다');
+    if (tenantId && post.tenantId !== tenantId) {
+      throw new ForbiddenException('접근 권한이 없습니다');
+    }
 
     // Increment view count
     await this.prisma.post.update({
@@ -105,8 +116,8 @@ export class PostsService {
     return post;
   }
 
-  async update(id: string, userId: string, userRole: Role, dto: UpdatePostDto) {
-    const post = await this.findPostOrThrow(id);
+  async update(id: string, userId: string, userRole: Role, dto: UpdatePostDto, tenantId?: string) {
+    const post = await this.findPostOrThrow(id, tenantId);
     if (
       post.authorId !== userId &&
       !([Role.PRESIDENT, Role.VICE_PRESIDENT] as Role[]).includes(userRole)
@@ -120,8 +131,8 @@ export class PostsService {
     });
   }
 
-  async remove(id: string, userId: string, userRole: Role) {
-    const post = await this.findPostOrThrow(id);
+  async remove(id: string, userId: string, userRole: Role, tenantId?: string) {
+    const post = await this.findPostOrThrow(id, tenantId);
     if (
       post.authorId !== userId &&
       !([Role.PRESIDENT, Role.VICE_PRESIDENT] as Role[]).includes(userRole)
@@ -132,7 +143,8 @@ export class PostsService {
     return { message: '게시글이 삭제되었습니다' };
   }
 
-  async toggleLike(postId: string, userId: string) {
+  async toggleLike(postId: string, userId: string, tenantId?: string) {
+    await this.findPostOrThrow(postId, tenantId);
     const existing = await this.prisma.postLike.findUnique({
       where: { postId_userId: { postId, userId } },
     });
@@ -160,19 +172,21 @@ export class PostsService {
     return { liked: true, likeCount: post!.likeCount };
   }
 
-  async pinPost(id: string) {
-    await this.findPostOrThrow(id);
-    const post = await this.prisma.post.findUnique({ where: { id } });
+  async pinPost(id: string, tenantId?: string) {
+    const post = await this.findPostOrThrow(id, tenantId);
     return this.prisma.post.update({
       where: { id },
-      data: { isPinned: !post!.isPinned },
+      data: { isPinned: !post.isPinned },
       include: { author: { select: { id: true, name: true, profileImage: true } } },
     });
   }
 
-  private async findPostOrThrow(id: string) {
+  private async findPostOrThrow(id: string, tenantId?: string) {
     const post = await this.prisma.post.findUnique({ where: { id } });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다');
+    if (tenantId && post.tenantId !== tenantId) {
+      throw new ForbiddenException('접근 권한이 없습니다');
+    }
     return post;
   }
 }

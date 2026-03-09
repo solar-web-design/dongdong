@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,10 +16,11 @@ export class MeetingsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryMeetingDto, tenantId?: string) {
+    if (!tenantId) return { data: [], total: 0, page: 1, totalPages: 0 };
     const { page = 1, limit = 20, status } = query;
     const where: Prisma.MeetingWhereInput = {
+      tenantId,
       ...(status && { status }),
-      ...(tenantId && { tenantId }),
     };
 
     const [data, total] = await Promise.all([
@@ -46,7 +48,7 @@ export class MeetingsService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, tenantId?: string) {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id },
       include: {
@@ -61,21 +63,25 @@ export class MeetingsService {
       },
     });
     if (!meeting) throw new NotFoundException('모임을 찾을 수 없습니다');
+    if (tenantId && meeting.tenantId !== tenantId) {
+      throw new ForbiddenException('접근 권한이 없습니다');
+    }
     return meeting;
   }
 
   async create(dto: CreateMeetingDto, tenantId?: string) {
+    if (!tenantId) throw new ForbiddenException('테넌트 컨텍스트가 필요합니다');
     return this.prisma.meeting.create({
       data: {
         ...dto,
         date: new Date(dto.date),
-        ...(tenantId && { tenantId }),
+        tenantId,
       },
     });
   }
 
-  async update(id: string, dto: UpdateMeetingDto) {
-    await this.findOrThrow(id);
+  async update(id: string, dto: UpdateMeetingDto, tenantId?: string) {
+    await this.findOrThrow(id, tenantId);
     const { date, ...rest } = dto;
     return this.prisma.meeting.update({
       where: { id },
@@ -86,14 +92,14 @@ export class MeetingsService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOrThrow(id);
+  async remove(id: string, tenantId?: string) {
+    await this.findOrThrow(id, tenantId);
     await this.prisma.meeting.delete({ where: { id } });
     return { message: '모임이 삭제되었습니다' };
   }
 
-  async rsvp(meetingId: string, userId: string, dto: RsvpDto) {
-    const meeting = await this.findOrThrow(meetingId);
+  async rsvp(meetingId: string, userId: string, dto: RsvpDto, tenantId?: string) {
+    const meeting = await this.findOrThrow(meetingId, tenantId);
 
     if (meeting.status === 'CANCELLED') {
       throw new BadRequestException('취소된 모임입니다');
@@ -126,9 +132,12 @@ export class MeetingsService {
     });
   }
 
-  private async findOrThrow(id: string) {
+  private async findOrThrow(id: string, tenantId?: string) {
     const meeting = await this.prisma.meeting.findUnique({ where: { id } });
     if (!meeting) throw new NotFoundException('모임을 찾을 수 없습니다');
+    if (tenantId && meeting.tenantId !== tenantId) {
+      throw new ForbiddenException('접근 권한이 없습니다');
+    }
     return meeting;
   }
 }

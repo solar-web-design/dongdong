@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Send, ImagePlus, LogOut, X } from 'lucide-react';
@@ -33,12 +33,12 @@ export default function ChatRoomPage() {
       api<CursorResponse<ChatMessage>>(`/chat/rooms/${roomId}/messages`, { params: { limit: 50 } }),
   });
 
-  const allMessages = [
-    ...(data?.data || []),
+  const allMessages = useMemo(() => [
+    ...(data?.data || []).slice().reverse(),
     ...realtimeMessages.filter(
       (rm) => !data?.data.some((dm) => dm.id === rm.id)
     ),
-  ];
+  ], [data?.data, realtimeMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });

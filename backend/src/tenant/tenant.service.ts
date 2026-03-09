@@ -2,8 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
-import { TenantStatus } from '@prisma/client';
+import { TenantStatus, Role, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
@@ -29,6 +31,25 @@ export class TenantService {
     });
     if (!tenant) throw new NotFoundException('테넌트를 찾을 수 없습니다');
     return tenant;
+  }
+
+  async searchPublic(q?: string) {
+    const where: Prisma.TenantWhereInput = {
+      status: 'ACTIVE',
+      ...(q && {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' as const } },
+          { universityName: { contains: q, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
+    const data = await this.prisma.tenant.findMany({
+      where,
+      select: { id: true, name: true, universityName: true, slug: true, description: true },
+      orderBy: { name: 'asc' },
+      take: 20,
+    });
+    return { data };
   }
 
   async findAll(query: { page?: number; limit?: number; search?: string; status?: TenantStatus }) {
@@ -99,5 +120,122 @@ export class TenantService {
       this.prisma.meeting.count({ where: { tenantId: id } }),
     ]);
     return { userCount, postCount, meetingCount };
+  }
+
+  async getTenantUsers(tenantId: string, status?: string) {
+    await this.findById(tenantId);
+    const where: Prisma.UserWhereInput = {
+      tenantId,
+      isSuperAdmin: false,
+      ...(status && { status: status as any }),
+    };
+    const data = await this.prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+        department: true,
+        admissionYear: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return { data };
+  }
+
+  async approveUserAsRole(tenantId: string, userId: string, role: string, approvedById: string) {
+    await this.findById(tenantId);
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('회원을 찾을 수 없습니다');
+    if (user.tenantId !== tenantId) throw new ForbiddenException('해당 테넌트의 회원이 아닙니다');
+    if (user.status !== 'PENDING') throw new ForbiddenException('승인 대기 상태가 아닙니다');
+
+    const validRoles: string[] = Object.values(Role);
+    if (!validRoles.includes(role)) {
+      throw new BadRequestException(`유효하지 않은 역할입니다: ${role}`);
+    }
+
+    // 회장 역할 부여 시 기존 회장이 있으면 차단
+    if (role === 'PRESIDENT') {
+      const existingPresident = await this.prisma.user.findFirst({
+        where: { tenantId, role: 'PRESIDENT', status: 'ACTIVE' },
+      });
+      if (existingPresident) {
+        throw new ConflictException('이미 회장이 존재합니다. 기존 회장의 역할을 변경한 후 시도하세요.');
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { status: 'ACTIVE', role: role as Role, approvedById },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+        department: true,
+        admissionYear: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async changeUserRole(tenantId: string, userId: string, role: string) {
+    await this.findById(tenantId);
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('회원을 찾을 수 없습니다');
+    if (user.tenantId !== tenantId) throw new ForbiddenException('해당 테넌트의 회원이 아닙니다');
+    if (user.status !== 'ACTIVE') throw new ForbiddenException('활성 상태의 회원만 역할을 변경할 수 있습니다');
+
+    const validRoles: string[] = Object.values(Role);
+    if (!validRoles.includes(role)) {
+      throw new BadRequestException(`유효하지 않은 역할입니다: ${role}`);
+    }
+
+    // 회장 역할 부여 시 기존 회장이 있으면 일반회원으로 변경
+    if (role === 'PRESIDENT') {
+      const existingPresident = await this.prisma.user.findFirst({
+        where: { tenantId, role: 'PRESIDENT', status: 'ACTIVE', id: { not: userId } },
+      });
+      if (existingPresident) {
+        await this.prisma.user.update({
+          where: { id: existingPresident.id },
+          data: { role: 'MEMBER' },
+        });
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { role: role as Role },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+        department: true,
+        admissionYear: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async rejectUser(tenantId: string, userId: string) {
+    await this.findById(tenantId);
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('회원을 찾을 수 없습니다');
+    if (user.tenantId !== tenantId) throw new ForbiddenException('해당 테넌트의 회원이 아닙니다');
+    if (user.status !== 'PENDING') throw new ForbiddenException('승인 대기 상태가 아닙니다');
+
+    await this.prisma.user.delete({ where: { id: userId } });
+    return { message: '가입이 거절되었습니다' };
   }
 }

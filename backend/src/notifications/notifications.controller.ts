@@ -5,8 +5,10 @@ import {
   Delete,
   Param,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import * as express from 'express';
 import { NotificationsService } from './notifications.service';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,8 +23,9 @@ export class NotificationsController {
   findAll(
     @CurrentUser('id') userId: string,
     @Query() query: QueryNotificationsDto,
+    @Req() req: express.Request,
   ) {
-    return this.notificationsService.findAll(userId, query);
+    return this.notificationsService.findAll(userId, query, req.tenantId);
   }
 
   @Patch(':id/read')

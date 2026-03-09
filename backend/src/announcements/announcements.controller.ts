@@ -46,8 +46,9 @@ export class AnnouncementsController {
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
     @Body() dto: UpdateAnnouncementDto,
+    @Req() req: express.Request,
   ) {
-    return this.announcementsService.update(id, userId, role, dto);
+    return this.announcementsService.update(id, userId, role, dto, req.tenantId);
   }
 
   @Delete(':id')
@@ -55,7 +56,8 @@ export class AnnouncementsController {
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
+    @Req() req: express.Request,
   ) {
-    return this.announcementsService.remove(id, userId, role);
+    return this.announcementsService.remove(id, userId, role, req.tenantId);
   }
 }

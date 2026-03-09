@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { User, Search, Megaphone, Bell, Mail, Settings, ShieldCheck, ChevronRight, LogOut } from 'lucide-react';
+import { User, Search, Megaphone, Bell, Mail, Settings, ShieldCheck, ChevronRight, LogOut, Crown } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { disconnectSocket } from '@/lib/socket';
 import { useRouter } from 'next/navigation';
@@ -24,7 +24,7 @@ export default function MorePage() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const isAdmin = user?.role === 'PRESIDENT' || user?.role === 'VICE_PRESIDENT';
+  const isAdmin = user?.role === 'PRESIDENT' || user?.role === 'VICE_PRESIDENT' || user?.isSuperAdmin;
   const role = user ? getRoleBadge(user.role) : null;
 
   const handleLogout = async () => {
@@ -44,6 +44,7 @@ export default function MorePage() {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg">{user.name}</span>
+              {user.isSuperAdmin && <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">SA</Badge>}
               {role && user.role !== 'MEMBER' && <Badge className={role.color}>{role.label}</Badge>}
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
@@ -75,6 +76,17 @@ export default function MorePage() {
           >
             <ShieldCheck size={20} className="text-gray-500 dark:text-gray-400" />
             <span className="font-medium text-sm flex-1">관리자</span>
+            <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
+          </Link>
+        )}
+
+        {user?.isSuperAdmin && (
+          <Link
+            href="/super-admin"
+            className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Crown size={20} className="text-amber-500" />
+            <span className="font-medium text-sm flex-1">플랫폼 관리</span>
             <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
           </Link>
         )}

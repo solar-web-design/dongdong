@@ -31,6 +31,7 @@ const USER_SELECT = {
   location: true,
   website: true,
   createdAt: true,
+  isSuperAdmin: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
 
@@ -81,10 +82,12 @@ export class UsersService {
   }
 
   async getUsers(query: QueryUsersDto, tenantId?: string) {
+    if (!tenantId) return { data: [], total: 0, page: 1, totalPages: 0 };
     const { page = 1, limit = 20, search, department, admissionYear } = query;
     const where: Prisma.UserWhereInput = {
       status: 'ACTIVE',
-      ...(tenantId && { tenantId }),
+      isSuperAdmin: false,
+      tenantId,
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
@@ -116,9 +119,10 @@ export class UsersService {
   }
 
   async getPendingUsers(tenantId?: string) {
+    if (!tenantId) return { data: [] };
     return {
       data: await this.prisma.user.findMany({
-        where: { status: 'PENDING', ...(tenantId && { tenantId }) },
+        where: { status: 'PENDING', isSuperAdmin: false, tenantId },
         select: USER_SELECT,
         orderBy: { createdAt: 'asc' },
       }),
@@ -146,11 +150,32 @@ export class UsersService {
     return { message: '가입이 거절되었습니다' };
   }
 
-  async changeRole(id: string, dto: ChangeRoleDto) {
-    if (dto.role === 'PRESIDENT') {
-      throw new ForbiddenException('회장 역할은 직접 부여할 수 없습니다');
+  async changeRole(id: string, dto: ChangeRoleDto, requestUser?: { isSuperAdmin?: boolean }) {
+    if (dto.role === 'PRESIDENT' && !requestUser?.isSuperAdmin) {
+      throw new ForbiddenException('회장 역할은 슈퍼어드민만 부여할 수 있습니다');
     }
-    await this.findUserOrThrow(id);
+    const user = await this.findUserOrThrow(id);
+    // 현재 회장이 자신을 강등하려는 경우, 다른 회장이 있어야만 허용
+    if (user.role === 'PRESIDENT' && dto.role !== 'PRESIDENT' && user.tenantId) {
+      const otherPresident = await this.prisma.user.findFirst({
+        where: { tenantId: user.tenantId, role: 'PRESIDENT', status: 'ACTIVE', id: { not: id } },
+      });
+      if (!otherPresident) {
+        throw new ForbiddenException('회장이 최소 1명은 있어야 합니다. 먼저 다른 회원을 회장으로 지정하세요.');
+      }
+    }
+    // 회장으로 변경 시 같은 테넌트의 기존 회장을 일반회원으로 변경
+    if (dto.role === 'PRESIDENT' && user.tenantId) {
+      const existingPresident = await this.prisma.user.findFirst({
+        where: { tenantId: user.tenantId, role: 'PRESIDENT', status: 'ACTIVE', id: { not: id } },
+      });
+      if (existingPresident) {
+        await this.prisma.user.update({
+          where: { id: existingPresident.id },
+          data: { role: 'MEMBER' },
+        });
+      }
+    }
     return this.prisma.user.update({
       where: { id },
       data: { role: dto.role },

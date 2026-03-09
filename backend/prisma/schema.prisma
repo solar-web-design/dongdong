@@ -478,3 +478,39 @@ model Report {
   @@index([type])
   @@map("reports")
 }
+
+// ===================== 동문회 개설 신청 =====================
+
+enum TenantRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model TenantRequest {
+  id                String              @id @default(uuid())
+  status            TenantRequestStatus @default(PENDING)
+
+  // 신청자 정보
+  applicantName     String
+  applicantEmail    String
+  applicantPhone    String?
+
+  // 동문회 정보
+  universityName    String
+  clubName          String              // 동문회 이름
+  slug              String              // 희망 서브도메인
+  description       String?
+  expectedMembers   Int?                // 예상 회원 수
+
+  // 처리 정보
+  rejectReason      String?
+  resolvedAt        DateTime?
+  resolvedById      String?
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([status])
+  @@map("tenant_requests")
+}

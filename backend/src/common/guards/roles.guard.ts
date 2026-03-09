@@ -33,6 +33,8 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles) return true;
 
     const { user } = context.switchToHttp().getRequest();
+    // SuperAdmin은 모든 역할 가드를 통과
+    if (user.isSuperAdmin) return true;
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException('권한이 없습니다');
     }

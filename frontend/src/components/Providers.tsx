@@ -13,14 +13,16 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Hydrate from localStorage first for instant UI
-    try {
-      const raw = localStorage.getItem('user');
-      if (raw) setUser(JSON.parse(raw));
-    } catch { /* ignore */ }
+    const hasUser = (() => {
+      try {
+        const raw = localStorage.getItem('user');
+        if (raw) { setUser(JSON.parse(raw)); return true; }
+      } catch { /* ignore */ }
+      return false;
+    })();
 
-    // Then validate with API
-    const token = localStorage.getItem('accessToken');
-    if (token) {
+    // Validate with API (tokens are in httpOnly cookies, not localStorage)
+    if (hasUser) {
       api<User>('/users/me')
         .then(setUser)
         .catch(() => setUser(null));

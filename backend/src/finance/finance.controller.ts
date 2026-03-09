@@ -28,8 +28,8 @@ export class FinanceController {
   // ---- Fee Schedules ----
 
   @Get('fees/schedules')
-  getFeeSchedules(@Req() req: express.Request) {
-    return this.financeService.getFeeSchedules(req.tenantId);
+  getFeeSchedules(@Req() req: express.Request, @CurrentUser('id') userId: string) {
+    return this.financeService.getFeeSchedules(req.tenantId, userId);
   }
 
   @Post('fees/schedules')
@@ -39,8 +39,8 @@ export class FinanceController {
   }
 
   @Get('fees/schedules/:id/payments')
-  getPaymentsBySchedule(@Param('id') id: string) {
-    return this.financeService.getPaymentsBySchedule(id);
+  getPaymentsBySchedule(@Param('id') id: string, @Req() req: express.Request) {
+    return this.financeService.getPaymentsBySchedule(id, req.tenantId);
   }
 
   // ---- Payments ----
@@ -50,14 +50,15 @@ export class FinanceController {
     @Param('scheduleId') scheduleId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: CreatePaymentDto,
+    @Req() req: express.Request,
   ) {
-    return this.financeService.createPayment(scheduleId, userId, dto);
+    return this.financeService.createPayment(scheduleId, userId, dto, req.tenantId);
   }
 
   @Patch('fees/payments/:id/confirm')
   @Roles(Role.TREASURER)
-  confirmPayment(@Param('id') id: string) {
-    return this.financeService.confirmPayment(id);
+  confirmPayment(@Param('id') id: string, @Req() req: express.Request) {
+    return this.financeService.confirmPayment(id, req.tenantId);
   }
 
   // ---- Account Book ----

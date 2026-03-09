@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   FileText, Users, MessageCircle, Mail, Wallet, Bell,
-  Megaphone, Settings, ShieldCheck, User,
+  Megaphone, Settings, ShieldCheck, User, Crown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
@@ -24,7 +24,7 @@ const menuItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'PRESIDENT' || user?.role === 'VICE_PRESIDENT';
+  const isAdmin = user?.role === 'PRESIDENT' || user?.role === 'VICE_PRESIDENT' || user?.isSuperAdmin;
 
   return (
     <aside className="hidden md:flex flex-col w-60 h-screen sticky top-0 border-r border-gray-200/40 dark:border-gray-700/40 bg-white/60 dark:bg-gray-950/60 backdrop-blur-xl p-4">
@@ -64,6 +64,20 @@ export default function Sidebar() {
           >
             <ShieldCheck size={20} />
             관리
+          </Link>
+        )}
+        {user?.isSuperAdmin && (
+          <Link
+            href="/super-admin"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+              pathname.startsWith('/super-admin')
+                ? 'bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400 shadow-sm'
+                : 'text-amber-600 dark:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/10'
+            )}
+          >
+            <Crown size={20} />
+            플랫폼 관리
           </Link>
         )}
       </nav>

@@ -58,3 +58,10 @@
            dark:bg-gray-900/40 dark:border-gray-700/20;
   }
 }
+
+/* ── Landing page animations ── */
+@keyframes landing-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+

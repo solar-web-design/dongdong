@@ -32,8 +32,8 @@ export class MeetingsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.meetingsService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: express.Request) {
+    return this.meetingsService.findOne(id, req.tenantId);
   }
 
   @Post()
@@ -44,14 +44,14 @@ export class MeetingsController {
 
   @Patch(':id')
   @Roles(Role.PRESIDENT, Role.VICE_PRESIDENT, Role.TREASURER)
-  update(@Param('id') id: string, @Body() dto: UpdateMeetingDto) {
-    return this.meetingsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateMeetingDto, @Req() req: express.Request) {
+    return this.meetingsService.update(id, dto, req.tenantId);
   }
 
   @Delete(':id')
   @Roles(Role.PRESIDENT, Role.VICE_PRESIDENT)
-  remove(@Param('id') id: string) {
-    return this.meetingsService.remove(id);
+  remove(@Param('id') id: string, @Req() req: express.Request) {
+    return this.meetingsService.remove(id, req.tenantId);
   }
 
   @Post(':id/rsvp')
@@ -59,7 +59,8 @@ export class MeetingsController {
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @Body() dto: RsvpDto,
+    @Req() req: express.Request,
   ) {
-    return this.meetingsService.rsvp(id, userId, dto);
+    return this.meetingsService.rsvp(id, userId, dto, req.tenantId);
   }
 }

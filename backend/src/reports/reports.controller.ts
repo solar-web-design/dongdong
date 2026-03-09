@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, Req, UseGuards } from '@nestjs/common';
+import * as express from 'express';
 import { Role } from '@prisma/client';
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
@@ -13,20 +14,20 @@ export class ReportsController {
   constructor(private reportsService: ReportsService) {}
 
   @Post()
-  create(@CurrentUser('id') userId: string, @Body() dto: CreateReportDto) {
-    return this.reportsService.create(userId, dto);
+  create(@CurrentUser('id') userId: string, @Body() dto: CreateReportDto, @Req() req: express.Request) {
+    return this.reportsService.create(userId, dto, req.tenantId);
   }
 
   @Get()
   @Roles(Role.PRESIDENT, Role.VICE_PRESIDENT)
-  findAll(@Query('status') status?: string) {
-    return this.reportsService.findAll(status);
+  findAll(@Query('status') status?: string, @Req() req?: express.Request) {
+    return this.reportsService.findAll(status, req?.tenantId);
   }
 
   @Get('stats')
   @Roles(Role.PRESIDENT, Role.VICE_PRESIDENT)
-  getStats() {
-    return this.reportsService.getStats();
+  getStats(@Req() req: express.Request) {
+    return this.reportsService.getStats(req.tenantId);
   }
 
   @Patch(':id/resolve')
@@ -35,7 +36,8 @@ export class ReportsController {
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @Body() dto: ResolveReportDto,
+    @Req() req: express.Request,
   ) {
-    return this.reportsService.resolve(id, userId, dto);
+    return this.reportsService.resolve(id, userId, dto, req.tenantId);
   }
 }

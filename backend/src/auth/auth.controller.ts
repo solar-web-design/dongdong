@@ -21,6 +21,7 @@ const COOKIE_OPTIONS = {
   secure: process.env.COOKIE_SECURE === 'true',
   sameSite: 'lax' as const,
   path: '/',
+  ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }),
 };
 
 @Controller('auth')
@@ -34,7 +35,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @Throttle({ short: { limit: 5, ttl: 900000 } })
+  @Throttle({ short: { limit: 20, ttl: 900000 } })
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.authService.login(dto);
@@ -58,7 +59,7 @@ export class AuthController {
   }
 
   @Post('oauth/kakao')
-  @Throttle({ short: { limit: 5, ttl: 900000 } })
+  @Throttle({ short: { limit: 20, ttl: 900000 } })
   @HttpCode(HttpStatus.OK)
   async oauthKakao(@Body('code') code: string, @Req() req: express.Request, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.authService.oauthKakao(code, req.tenantId);
@@ -68,7 +69,7 @@ export class AuthController {
   }
 
   @Post('oauth/google')
-  @Throttle({ short: { limit: 5, ttl: 900000 } })
+  @Throttle({ short: { limit: 20, ttl: 900000 } })
   @HttpCode(HttpStatus.OK)
   async oauthGoogle(@Body('code') code: string, @Req() req: express.Request, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.authService.oauthGoogle(code, req.tenantId);
@@ -81,8 +82,13 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async logout(@CurrentUser('id') userId: string, @Res({ passthrough: true }) res: express.Response) {
+    // 새 쿠키(domain 포함) 삭제
     res.clearCookie('accessToken', COOKIE_OPTIONS);
     res.clearCookie('refreshToken', COOKIE_OPTIONS);
+    // 이전 쿠키(domain 없는) 삭제 — 마이그레이션 호환
+    const { domain: _d, ...noDomainOpts } = COOKIE_OPTIONS as any;
+    res.clearCookie('accessToken', noDomainOpts);
+    res.clearCookie('refreshToken', noDomainOpts);
     return this.authService.logout(userId);
   }
 }

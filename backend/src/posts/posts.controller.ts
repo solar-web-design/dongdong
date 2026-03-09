@@ -35,8 +35,8 @@ export class PostsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.postsService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: express.Request) {
+    return this.postsService.findOne(id, req.tenantId);
   }
 
   @Post()
@@ -52,8 +52,9 @@ export class PostsController {
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
     @Body() dto: UpdatePostDto,
+    @Req() req: express.Request,
   ) {
-    return this.postsService.update(id, userId, role, dto);
+    return this.postsService.update(id, userId, role, dto, req.tenantId);
   }
 
   @Delete(':id')
@@ -61,20 +62,21 @@ export class PostsController {
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
+    @Req() req: express.Request,
   ) {
-    const result = await this.postsService.remove(id, userId, role);
+    const result = await this.postsService.remove(id, userId, role, req.tenantId);
     this.chatGateway.broadcastPostDeleted(id);
     return result;
   }
 
   @Post(':id/like')
-  toggleLike(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    return this.postsService.toggleLike(id, userId);
+  toggleLike(@Param('id') id: string, @CurrentUser('id') userId: string, @Req() req: express.Request) {
+    return this.postsService.toggleLike(id, userId, req.tenantId);
   }
 
   @Patch(':id/pin')
   @Roles(Role.PRESIDENT, Role.VICE_PRESIDENT)
-  pinPost(@Param('id') id: string) {
-    return this.postsService.pinPost(id);
+  pinPost(@Param('id') id: string, @Req() req: express.Request) {
+    return this.postsService.pinPost(id, req.tenantId);
   }
 }

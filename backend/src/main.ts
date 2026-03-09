@@ -16,8 +16,17 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   // CORS - 허용 origin 명시 (helmet보다 먼저 설정)
+  const corsOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+    origin: (origin, callback) => {
+      // 서버 간 요청 (origin 없음) 허용
+      if (!origin) return callback(null, true);
+      // 명시적 origin 매칭
+      if (corsOrigins.includes(origin)) return callback(null, true);
+      // *.aidongdong.co.kr 서브도메인 허용
+      if (/^https?:\/\/([a-z0-9-]+\.)?aidongdong\.co\.kr$/.test(origin)) return callback(null, true);
+      callback(null, false);
+    },
     credentials: true,
   });
 
