@@ -318,9 +318,9 @@ function FindMyAlumni() {
   return (
     <section className="relative px-5 pb-16 pt-4">
       <div className="max-w-lg mx-auto">
-        <div className="rounded-2xl p-6 border border-gray-200/30 dark:border-gray-700/30 bg-white/40 dark:bg-gray-900/30 backdrop-blur-sm">
+        <div className="rounded-2xl p-6 border border-teal-200/25 dark:border-teal-500/15 bg-white/40 dark:bg-gray-900/30 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Search size={20} className="text-gray-400" />
+            <Search size={20} className="text-teal-500 dark:text-teal-400" />
             <h3 className="text-[16px] font-bold text-gray-800 dark:text-gray-200">내 동문회 찾기</h3>
           </div>
           <p className="text-[13px] text-gray-500 dark:text-gray-400 mb-4">
@@ -338,7 +338,10 @@ function FindMyAlumni() {
             <button
               onClick={handleSearch}
               disabled={loading || !query.trim()}
-              className="px-5 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-[14px] hover:opacity-90 transition-opacity active:scale-[0.98] disabled:opacity-50"
+              className="px-5 py-3 rounded-xl text-white font-semibold text-[14px] hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 shadow-md shadow-indigo-500/20"
+              style={{
+                background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+              }}
             >
               {loading ? '...' : '검색'}
             </button>
@@ -384,6 +387,21 @@ function FindMyAlumni() {
   );
 }
 
+/* ── 로고 SVG 옵션들 ── */
+const LogoOptionA = () => (
+  /* A: 브릿지 — 두 d의 줄기가 아치로 연결 (연결/네트워크) */
+  <svg viewBox="0 0 40 40" fill="none" className="w-[34px] h-[34px]">
+    <path d="M11 12V30" stroke="white" strokeWidth="3.2" strokeLinecap="round"/>
+    <path d="M11 22.5a5.5 5.5 0 1 0 0 5" stroke="white" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
+    <path d="M29 12V30" stroke="white" strokeWidth="3.2" strokeLinecap="round"/>
+    <path d="M29 22.5a5.5 5.5 0 1 1 0 5" stroke="white" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
+    <path d="M11 12C11 6 29 6 29 12" stroke="white" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
+  </svg>
+);
+
+/* 최종 로고: 브릿지 dd */
+const BridgeLogo = LogoOptionA;
+
 export default function LandingPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
@@ -400,7 +418,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="relative bg-[#fafaf8] dark:bg-[#0a0a0c] overflow-x-hidden">
+    <div className="relative bg-[#f8f7ff] dark:bg-[#0a0a10] overflow-x-hidden">
       {/* ── 그레인 텍스처 오버레이 ── */}
       <div
         className="fixed inset-0 pointer-events-none z-50 opacity-[0.03] dark:opacity-[0.04] will-change-auto"
@@ -415,39 +433,40 @@ export default function LandingPage() {
       <section className="relative min-h-screen flex flex-col">
         {/* ── 배경 메쉬 그라데이션 ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* 인디고-바이올렛 주 그라데이션 (좌상) */}
           <div
-            className="absolute w-[800px] h-[800px] md:w-[1200px] md:h-[1200px] rounded-full opacity-30 dark:opacity-10 blur-3xl"
+            className="absolute w-[800px] h-[800px] md:w-[1200px] md:h-[1200px] rounded-full opacity-40 dark:opacity-15 blur-3xl"
             style={{
               top: '-20%',
               left: '-10%',
-              background: 'radial-gradient(circle, rgba(251,191,36,0.3) 0%, rgba(251,146,60,0.15) 40%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(99,102,241,0.35) 0%, rgba(139,92,246,0.2) 35%, transparent 70%)',
             }}
           />
+          {/* 티얼-시안 보조 (우상) */}
           <div
-            className="absolute w-[600px] h-[600px] md:w-[900px] md:h-[900px] rounded-full opacity-25 dark:opacity-10 blur-3xl"
+            className="absolute w-[600px] h-[600px] md:w-[900px] md:h-[900px] rounded-full opacity-30 dark:opacity-12 blur-3xl"
             style={{
               top: '10%',
               right: '-15%',
-              background: 'radial-gradient(circle, rgba(167,139,250,0.25) 0%, rgba(139,92,246,0.1) 40%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(20,184,166,0.3) 0%, rgba(6,182,212,0.15) 35%, transparent 70%)',
             }}
           />
+          {/* 블루-인디고 하단 */}
           <div
-            className="absolute w-[500px] h-[500px] md:w-[800px] md:h-[800px] rounded-full opacity-20 dark:opacity-[0.07] blur-3xl"
+            className="absolute w-[500px] h-[500px] md:w-[800px] md:h-[800px] rounded-full opacity-25 dark:opacity-10 blur-3xl"
             style={{
               bottom: '-10%',
               left: '20%',
-              background: 'radial-gradient(circle, rgba(56,189,248,0.2) 0%, rgba(59,130,246,0.1) 40%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(59,130,246,0.25) 0%, rgba(99,102,241,0.12) 40%, transparent 70%)',
             }}
           />
-          {/* 수묵화 느낌의 잉크 블롭 */}
+          {/* 앰버-오렌지 포인트 (우하) */}
           <div
-            className="absolute w-[300px] h-[400px] md:w-[500px] md:h-[600px] opacity-[0.03] dark:opacity-[0.06]"
+            className="absolute w-[400px] h-[400px] md:w-[600px] md:h-[600px] rounded-full opacity-20 dark:opacity-[0.08] blur-3xl"
             style={{
-              top: '15%',
-              left: '50%',
-              transform: 'translateX(-50%) rotate(-15deg)',
-              background: 'radial-gradient(ellipse at 40% 30%, #1a1a1a 0%, transparent 60%)',
-              borderRadius: '60% 40% 50% 50%',
+              bottom: '5%',
+              right: '-5%',
+              background: 'radial-gradient(circle, rgba(251,146,60,0.25) 0%, rgba(245,158,11,0.1) 40%, transparent 70%)',
             }}
           />
         </div>
@@ -546,15 +565,18 @@ export default function LandingPage() {
                   style={{
                     opacity: mounted ? 1 : 0,
                     transition: 'opacity 1.5s ease 0.5s',
-                    background: 'conic-gradient(from 0deg, rgba(251,191,36,0.15), rgba(167,139,250,0.15), rgba(56,189,248,0.15), rgba(251,191,36,0.15))',
+                    background: 'conic-gradient(from 0deg, rgba(99,102,241,0.25), rgba(20,184,166,0.2), rgba(251,146,60,0.2), rgba(139,92,246,0.25), rgba(99,102,241,0.25))',
                     filter: 'blur(8px)',
                     animation: 'spin 12s linear infinite',
                   }}
                 />
-                <div className="relative w-[72px] h-[72px] rounded-[20px] bg-gray-950 dark:bg-white flex items-center justify-center shadow-2xl shadow-gray-900/20 dark:shadow-white/10">
-                  <span className="text-[28px] font-black text-white dark:text-gray-950 tracking-tighter">
-                    동
-                  </span>
+                <div
+                  className="relative w-[72px] h-[72px] rounded-[20px] flex items-center justify-center shadow-2xl shadow-indigo-900/25 dark:shadow-indigo-400/15"
+                  style={{
+                    background: 'linear-gradient(135deg, #312e81 0%, #4338ca 40%, #6366f1 100%)',
+                  }}
+                >
+                  <BridgeLogo />
                 </div>
               </div>
               <h1 className="text-[42px] font-extrabold tracking-tight text-gray-950 dark:text-white leading-none">
@@ -580,7 +602,7 @@ export default function LandingPage() {
                 <span
                   className="relative inline-block"
                   style={{
-                    backgroundImage: 'linear-gradient(135deg, #f59e0b, #a855f7, #3b82f6)',
+                    backgroundImage: 'linear-gradient(135deg, #6366f1, #14b8a6, #f59e0b)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
@@ -588,9 +610,9 @@ export default function LandingPage() {
                 >
                   우리들의 네트워크
                   <span
-                    className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full opacity-40"
+                    className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full opacity-50"
                     style={{
-                      backgroundImage: 'linear-gradient(135deg, #f59e0b, #a855f7, #3b82f6)',
+                      backgroundImage: 'linear-gradient(135deg, #6366f1, #14b8a6, #f59e0b)',
                     }}
                   />
                 </span>
@@ -636,7 +658,7 @@ export default function LandingPage() {
               }}
             >
               <div
-                className="rounded-[20px] p-6 space-y-3 border bg-white/60 dark:bg-gray-900/55 backdrop-blur-[24px] backdrop-saturate-150 border-white/50 dark:border-gray-700/40 shadow-[0_20px_60px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.3),0_4px_16px_rgba(0,0,0,0.15)]"
+                className="rounded-[20px] p-6 space-y-3 border bg-white/65 dark:bg-gray-900/55 backdrop-blur-[24px] backdrop-saturate-150 border-indigo-200/30 dark:border-indigo-500/20 shadow-[0_20px_60px_rgba(99,102,241,0.08),0_4px_16px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.3),0_4px_16px_rgba(0,0,0,0.15)]"
               >
                 <a
                   href={KAKAO_AUTH_URL}
@@ -662,7 +684,10 @@ export default function LandingPage() {
                 </a>
                 <Link
                   href="/login"
-                  className="flex items-center justify-center w-full px-6 py-3.5 rounded-xl font-semibold text-[14px] text-gray-600 dark:text-gray-400 border border-gray-200/60 dark:border-gray-700/50 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 active:scale-[0.98]"
+                  className="flex items-center justify-center w-full px-6 py-3.5 rounded-xl font-semibold text-[14px] text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] shadow-lg shadow-indigo-500/20"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)',
+                  }}
                 >
                   이메일 로그인
                 </Link>
@@ -682,7 +707,7 @@ export default function LandingPage() {
               </span>
               <Link
                 href="/register"
-                className="text-[13px] font-bold text-gray-900 dark:text-gray-100 hover:underline underline-offset-2"
+                className="text-[13px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline underline-offset-2"
               >
                 가입 신청
               </Link>
@@ -698,7 +723,7 @@ export default function LandingPage() {
             transition: 'opacity 1.5s ease 1.5s',
           }}
         >
-          <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-600 animate-bounce">
+          <div className="flex flex-col items-center gap-2 text-indigo-400 dark:text-indigo-500 animate-bounce">
             <span className="text-[10px] tracking-widest uppercase font-medium">Features</span>
             <ArrowDown size={14} />
           </div>
@@ -709,14 +734,14 @@ export default function LandingPage() {
       <section className="relative px-5 pb-24 pt-8">
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800/60 text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-4">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-[11px] font-medium text-indigo-600 dark:text-indigo-400 mb-4">
               <Sparkles size={12} />
               동문을 위한 올인원 플랫폼
             </div>
             <h3 className="text-[20px] md:text-[24px] font-bold text-gray-900 dark:text-white leading-tight">
               필요한 모든 기능,
               <br />
-              <span className="text-gray-400 dark:text-gray-500">하나의 앱에서</span>
+              <span className="text-indigo-400 dark:text-indigo-500">하나의 앱에서</span>
             </h3>
           </div>
 
@@ -744,12 +769,12 @@ export default function LandingPage() {
             {/* 사용 가이드 티저 */}
             <Link
               href="/guide"
-              className="group relative overflow-hidden rounded-2xl p-6 border border-gray-200/30 dark:border-gray-700/30 hover:border-gray-300/60 dark:hover:border-gray-600/50 transition-all duration-300 hover:-translate-y-1"
+              className="group relative overflow-hidden rounded-2xl p-6 border border-amber-200/30 dark:border-amber-500/15 hover:border-amber-300/50 dark:hover:border-amber-500/30 transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(167,139,250,0.06) 100%)',
+                background: 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(245,158,11,0.05) 100%)',
               }}
             >
-              <div className="absolute top-0 right-0 w-24 h-24 opacity-10 dark:opacity-5 pointer-events-none"
+              <div className="absolute top-0 right-0 w-24 h-24 opacity-15 dark:opacity-8 pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.5) 0%, transparent 70%)' }}
               />
               <div className="flex items-center gap-3 mb-3">
@@ -779,12 +804,12 @@ export default function LandingPage() {
             {/* 데모 티저 */}
             <Link
               href="/demo"
-              className="group relative overflow-hidden rounded-2xl p-6 border border-gray-200/30 dark:border-gray-700/30 hover:border-gray-300/60 dark:hover:border-gray-600/50 transition-all duration-300 hover:-translate-y-1"
+              className="group relative overflow-hidden rounded-2xl p-6 border border-sky-200/30 dark:border-sky-500/15 hover:border-sky-300/50 dark:hover:border-sky-500/30 transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'linear-gradient(135deg, rgba(56,189,248,0.06) 0%, rgba(139,92,246,0.06) 100%)',
+                background: 'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(99,102,241,0.05) 100%)',
               }}
             >
-              <div className="absolute top-0 right-0 w-24 h-24 opacity-10 dark:opacity-5 pointer-events-none"
+              <div className="absolute top-0 right-0 w-24 h-24 opacity-15 dark:opacity-8 pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(56,189,248,0.5) 0%, transparent 70%)' }}
               />
               <div className="flex items-center gap-3 mb-3">
@@ -823,17 +848,22 @@ export default function LandingPage() {
       {/* ── 동문회 개설 CTA ── */}
       <section className="relative px-5 pb-16 pt-4">
         <div className="max-w-lg mx-auto">
-          <div className="rounded-2xl p-6 border border-gray-200/30 dark:border-gray-700/30 text-center"
-            style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.04) 0%, rgba(167,139,250,0.04) 50%, rgba(56,189,248,0.04) 100%)' }}
+          <div className="rounded-2xl p-6 border border-indigo-200/20 dark:border-indigo-500/15 text-center"
+            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(20,184,166,0.04) 50%, rgba(251,146,60,0.04) 100%)' }}
           >
-            <Building2 size={28} className="mx-auto mb-3 text-gray-400 dark:text-gray-500" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-500/20">
+              <Building2 size={22} className="text-white" />
+            </div>
             <h3 className="text-[16px] font-bold text-gray-800 dark:text-gray-200 mb-1">동문회를 운영하고 계신가요?</h3>
             <p className="text-[13px] text-gray-500 dark:text-gray-400 mb-5">
               동동에서 동문회 전용 공간을 무료로 개설하세요
             </p>
             <Link
               href="/tenant-request"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-[14px] hover:opacity-90 transition-opacity active:scale-[0.98]"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold text-[14px] hover:opacity-90 transition-all active:scale-[0.98] shadow-lg shadow-indigo-500/25"
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)',
+              }}
             >
               <Building2 size={16} />
               동문회 개설 신청
@@ -844,8 +874,8 @@ export default function LandingPage() {
 
       {/* ── 푸터 ── */}
       <footer className="relative px-5 pb-10 text-center">
-        <div className="text-[11px] text-gray-300 dark:text-gray-700">
-          &copy; 2026 동동. 동문 네트워크 플랫폼.
+        <div className="text-[11px] text-gray-400 dark:text-gray-600">
+          &copy; 2026 <span className="text-indigo-400/70 dark:text-indigo-500/50 font-medium">동동</span>. 동문 네트워크 플랫폼.
         </div>
       </footer>
     </div>
