@@ -136,6 +136,21 @@ dongdong/
 - [x] 랜딩페이지 리디자인 + 공개 페이지 분리 ((public) route group)
 - [x] NAS 배포 완료
 
+### Phase 10: 인증 테넌트 격리 ✅ 완료 (배포 대기)
+- [x] 크로스 테넌트 로그인 차단
+  - 로그인 시 tenantId 검증 (서브도메인: 소속 회원만, 메인도메인: SuperAdmin만)
+  - JWT 페이로드에 tenantId 포함
+  - JWT 검증(JwtStrategy) 시 토큰 tenantId ↔ 요청 tenantId 일치 확인
+  - OAuth 로그인도 테넌트 격리 적용
+  - refresh 토큰 재발급 시에도 tenantId 포함
+- [ ] NAS 배포 (집에서 진행 필요)
+
+### TODO: 원격 배포 환경 구축
+- [ ] Tailscale VPN 설치 (NAS + 회사PC) — 외부에서 NAS SSH 접속용
+  - NAS: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`
+  - 회사PC: Tailscale 클라이언트 설치 후 로그인
+  - 이후 Tailscale IP로 SSH 접속 가능 (포트포워딩 불필요, 외부 노출 제로)
+
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인
 - 동문 프로필 (LinkedIn 스타일)
