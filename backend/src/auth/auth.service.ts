@@ -96,11 +96,20 @@ export class AuthService {
     );
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, tenantId?: string) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
     if (!user || !user.password) {
+      throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다');
+    }
+
+    // 테넌트 격리: 서브도메인 요청 시 해당 테넌트 소속 회원만 허용
+    if (tenantId && user.tenantId !== tenantId) {
+      throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다');
+    }
+    // 메인도메인(tenantId 없음) 요청 시 SuperAdmin만 허용
+    if (!tenantId && !user.isSuperAdmin) {
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다');
     }
 
@@ -119,7 +128,7 @@ export class AuthService {
       throw new UnauthorizedException('탈퇴한 계정입니다');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, user.tenantId);
 
     // Refresh Token 해시 후 DB 저장
     const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, 10);
@@ -154,7 +163,7 @@ export class AuthService {
         throw new UnauthorizedException('유효하지 않은 리프레시 토큰입니다');
       }
 
-      const tokens = await this.generateTokens(user.id, user.email);
+      const tokens = await this.generateTokens(user.id, user.email, user.tenantId);
 
       const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, 10);
       await this.prisma.user.update({
@@ -277,7 +286,12 @@ export class AuthService {
     if (user.status === 'SUSPENDED') throw new ForbiddenException('정지된 계정입니다');
     if (user.status === 'WITHDRAWN') throw new UnauthorizedException('탈퇴한 계정입니다');
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    // OAuth 기존 유저: 테넌트 격리 검증
+    if (!isNewUser && data.tenantId && user.tenantId !== data.tenantId) {
+      throw new UnauthorizedException('해당 동문회에 소속되지 않은 계정입니다');
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email, user.tenantId);
     const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, 10);
     await this.prisma.user.update({
       where: { id: user.id },
@@ -288,8 +302,8 @@ export class AuthService {
     return { ...tokens, user: userWithoutSensitive, isNewUser };
   }
 
-  private async generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
+  private async generateTokens(userId: string, email: string, tenantId?: string | null) {
+    const payload = { sub: userId, email, ...(tenantId && { tenantId }) };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.getJwtSecret(),

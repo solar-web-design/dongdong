@@ -37,8 +37,8 @@ export class AuthController {
   @Post('login')
   @Throttle({ short: { limit: 20, ttl: 900000 } })
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: express.Response) {
-    const result = await this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Req() req: express.Request, @Res({ passthrough: true }) res: express.Response) {
+    const result = await this.authService.login(dto, req.tenantId);
     res.cookie('accessToken', result.accessToken, { ...COOKIE_OPTIONS, maxAge: 30 * 60 * 1000 });
     res.cookie('refreshToken', result.refreshToken, { ...COOKIE_OPTIONS, maxAge: 7 * 24 * 60 * 60 * 1000 });
     return { user: result.user };
