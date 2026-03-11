@@ -39,7 +39,8 @@ dongdong/
 ## NAS 배포 정보
 - **서버**: T8Plus 자작 NAS (Ubuntu Server 24.04 LTS)
 - **내부 IP**: `192.168.0.32`
-- **SSH**: `ssh seoseokkyun@192.168.0.32` (포트 22, SSH 키 인증, 비밀번호 불필요)
+- **Tailscale IP**: `100.80.32.52` (외부 접속용)
+- **SSH**: `ssh seoseokkyun@192.168.0.32` (내부) / `ssh seoseokkyun@100.80.32.52` (외부, Tailscale)
 - **프로젝트 경로**: `/home/seoseokkyun/dongdong/`
 - **환경변수 파일**: `.env.production` (docker-compose 실행 시 `--env-file .env.production`)
 - **Docker Compose**: `sudo docker compose --env-file .env.production up -d`
@@ -145,11 +146,11 @@ dongdong/
   - refresh 토큰 재발급 시에도 tenantId 포함
 - [ ] NAS 배포 (집에서 진행 필요)
 
-### TODO: 원격 배포 환경 구축
-- [ ] Tailscale VPN 설치 (NAS + 회사PC) — 외부에서 NAS SSH 접속용
-  - NAS: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`
-  - 회사PC: Tailscale 클라이언트 설치 후 로그인
-  - 이후 Tailscale IP로 SSH 접속 가능 (포트포워딩 불필요, 외부 노출 제로)
+### Phase 11: 원격 배포 환경 구축 ✅ 완료
+- [x] Tailscale VPN 설치 (NAS + PC)
+  - NAS: Tailscale v1.94.2 설치, IP `100.80.32.52`
+  - PC: Tailscale Windows 클라이언트 설치 및 로그인
+  - `ssh seoseokkyun@100.80.32.52`로 외부 NAS SSH 접속 확인
 
 ## 핵심 기능
 - 회원 가입 신청 → 회장 승인
