@@ -41,6 +41,9 @@ dongdong/
 - **내부 IP**: `192.168.0.32`
 - **Tailscale IP**: `100.80.32.52` (외부 접속용)
 - **SSH**: `ssh seoseokkyun@192.168.0.32` (내부) / `ssh seoseokkyun@100.80.32.52` (외부, Tailscale)
+- **Tailscale 클라이언트**:
+  - 집 PC (`skseo-1`): `100.110.138.28`
+  - 회사 PC (`skseo`): `100.84.127.26` — SSH 키 등록 완료
 - **프로젝트 경로**: `/home/seoseokkyun/dongdong/`
 - **환경변수 파일**: `.env.production` (docker-compose 실행 시 `--env-file .env.production`)
 - **Docker Compose**: `sudo docker compose --env-file .env.production up -d`
@@ -146,14 +149,13 @@ dongdong/
   - refresh 토큰 재발급 시에도 tenantId 포함
 - [x] NAS 배포 (집에서 진행 필요)
 
-### Phase 11: 원격 배포 환경 구축 (진행 중)
-- [x] Tailscale VPN 설치 (NAS + PC)
+### Phase 11: 원격 배포 환경 구축 ✅ 완료
+- [x] Tailscale VPN 설치 (NAS + 집 PC + 회사 PC)
   - NAS: Tailscale v1.94.2 설치, IP `100.80.32.52`
-  - 집 PC: Tailscale Windows 클라이언트 설치 및 로그인
-  - 회사 PC: Tailscale Windows 클라이언트 설치 및 로그인
-  - Tailscale 인증: Google 계정 (NAS와 동일 계정 필수)
-  - `ssh seoseokkyun@100.80.32.52`로 외부 NAS SSH 접속 확인
-- [ ] 회사 PC SSH 키 NAS 등록 (NAS의 PasswordAuthentication=no이므로 집에서 authorized_keys에 추가 필요)
+  - 집 PC (`skseo-1`): Tailscale IP `100.110.138.28`
+  - 회사 PC (`skseo`): Tailscale IP `100.84.127.26`, SSH 키 등록 완료
+  - Tailscale 인증: Google 계정 (모든 기기 동일 계정 필수)
+  - `ssh seoseokkyun@100.80.32.52`로 외부 NAS SSH 접속 확인 (집/회사 모두)
 
 ## 로드맵: 플랫폼 고도화 계획
 
