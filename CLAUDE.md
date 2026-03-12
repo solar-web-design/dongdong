@@ -146,12 +146,14 @@ dongdong/
   - refresh 토큰 재발급 시에도 tenantId 포함
 - [x] NAS 배포 (집에서 진행 필요)
 
-### Phase 11: 원격 배포 환경 구축 ✅ 완료
+### Phase 11: 원격 배포 환경 구축 (진행 중)
 - [x] Tailscale VPN 설치 (NAS + PC)
   - NAS: Tailscale v1.94.2 설치, IP `100.80.32.52`
-  - PC: Tailscale Windows 클라이언트 설치 및 로그인
+  - 집 PC: Tailscale Windows 클라이언트 설치 및 로그인
+  - 회사 PC: Tailscale Windows 클라이언트 설치 및 로그인
   - Tailscale 인증: Google 계정 (NAS와 동일 계정 필수)
   - `ssh seoseokkyun@100.80.32.52`로 외부 NAS SSH 접속 확인
+- [ ] 회사 PC SSH 키 NAS 등록 (NAS의 PasswordAuthentication=no이므로 집에서 authorized_keys에 추가 필요)
 
 ## 로드맵: 플랫폼 고도화 계획
 
